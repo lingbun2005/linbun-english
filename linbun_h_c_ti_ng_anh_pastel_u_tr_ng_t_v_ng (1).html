@@ -1,0 +1,2318 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linbun — Học Tiếng Anh Pastel & Đấu Trường Từ Vựng</title>
+
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN & Pastel Palette Config -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        pastelPink: {
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            200: '#fbcfe8',
+                            300: '#f9a8d4',
+                            400: '#f472b6',
+                            500: '#ec4899',
+                        },
+                        pastelBlue: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#60a5fa',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Client-Side Parsers: Word (.docx), PDF (.pdf), Image OCR (.png/.jpg/.webp) -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+    <style>
+        /* Pastel Mesh Background (Light & Dark Modes) */
+        body {
+            background-image:
+                radial-gradient(at 0% 0%, rgba(251, 207, 232, 0.45) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(186, 230, 253, 0.45) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(253, 242, 248, 0.6) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+        html.dark body {
+            background-color: #12101c;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(244, 114, 182, 0.14) 0px, transparent 48%),
+                radial-gradient(at 100% 0%, rgba(56, 189, 248, 0.14) 0px, transparent 48%),
+                radial-gradient(at 50% 100%, rgba(236, 72, 153, 0.08) 0px, transparent 55%);
+        }
+
+        /* 3D Flashcard Flip Mechanics */
+        .perspective-1200 {
+            perspective: 1200px;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            transform-style: preserve-3d;
+        }
+        .flip-card-inner.is-flipped {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* UI Transitions & Game Effects */
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up {
+            animation: fadeSlideUp 0.28s ease-out forwards;
+        }
+
+        @keyframes cardShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: cardShake 0.4s ease-in-out;
+        }
+
+        @keyframes soundPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.13); }
+        }
+        .speaking-active {
+            animation: soundPulse 0.65s infinite ease-in-out;
+        }
+
+        @keyframes shrinkBar {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        .animate-countdown {
+            animation: shrinkBar 0.9s linear forwards;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(244, 114, 182, 0.35); border-radius: 9999px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-[#fdf2f8] text-slate-800 dark:bg-[#12101c] dark:text-slate-100 font-sans antialiased transition-colors duration-200 selection:bg-pink-400 selection:text-white">
+
+    <!-- Pastel Confetti Canvas -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <div class="min-h-screen flex flex-col lg:flex-row">
+        <!-- ==================== DESKTOP SIDEBAR ==================== -->
+        <aside class="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0 bg-white/85 dark:bg-[#191627]/90 backdrop-blur-xl border-r border-pink-200/70 dark:border-pink-500/20 z-30">
+            <!-- Brand Header -->
+            <div class="p-6 flex items-center justify-between border-b border-pink-100 dark:border-slate-800/80">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#f472b6] via-pink-400 to-[#38bdf8] flex items-center justify-center text-white shadow-lg shadow-pink-400/25 text-2xl">
+                        🐰
+                    </div>
+                    <div>
+                        <h1 class="font-display font-extrabold text-2xl tracking-tight bg-gradient-to-r from-pink-500 to-sky-500 bg-clip-text text-transparent">Linbun</h1>
+                        <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Học Tiếng Anh Pastel</p>
+                    </div>
+                </div>
+                <span id="sidebar-total-badge" class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-gradient-to-r from-pink-100 to-sky-100 dark:from-pink-950 dark:to-sky-950 text-pink-600 dark:text-sky-300 border border-pink-200/70 dark:border-slate-700">64 từ</span>
+            </div>
+
+            <!-- 4 Main Modules Navigation -->
+            <nav class="flex-1 px-4 py-5 space-y-2 overflow-y-auto">
+                <button onclick="switchModule('new_vocab')" data-nav="new_vocab" class="nav-btn w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="w-9 h-9 rounded-xl flex items-center justify-center bg-pink-100/80 dark:bg-pink-950/60 text-base">🌱</span>
+                        <div class="text-left">
+                            <div>Học từ vựng mới</div>
+                            <div class="text-[11px] font-normal opacity-80">Thẻ 3D & Phát âm</div>
+                        </div>
+                    </div>
+                    <span id="badge-new-count" class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-pink-100 dark:bg-pink-900/70 text-pink-600 dark:text-pink-300">64</span>
+                </button>
+
+                <button onclick="switchModule('learned_vault')" data-nav="learned_vault" class="nav-btn w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="w-9 h-9 rounded-xl flex items-center justify-center bg-sky-100/80 dark:bg-sky-950/60 text-base">🎓</span>
+                        <div class="text-left">
+                            <div>Kho từ đã học</div>
+                            <div class="text-[11px] font-normal opacity-80">Lưu trữ & Ôn tập riêng</div>
+                        </div>
+                    </div>
+                    <span id="badge-learned-count" class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-sky-100 dark:bg-sky-900/70 text-sky-600 dark:text-sky-300">0</span>
+                </button>
+
+                <button onclick="switchModule('import_vocab')" data-nav="import_vocab" class="nav-btn w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="w-9 h-9 rounded-xl flex items-center justify-center bg-rose-100/80 dark:bg-rose-950/60 text-base">📷</span>
+                        <div class="text-left">
+                            <div>Scan & Nhập từ mới</div>
+                            <div class="text-[11px] font-normal opacity-80">Tự thêm nghĩa, IPA, ví dụ</div>
+                        </div>
+                    </div>
+                    <span id="badge-batch-count" class="hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-pink-500 to-sky-500 text-white">Mới</span>
+                </button>
+
+                <button onclick="switchModule('game_arena')" data-nav="game_arena" class="nav-btn w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br from-pink-100 to-sky-100 dark:from-pink-950/60 dark:to-sky-950/60 text-base">🎮</span>
+                        <div class="text-left">
+                            <div>Đấu trường Game</div>
+                            <div class="text-[11px] font-normal opacity-80">100% bộ từ & Auto-next</div>
+                        </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-100 dark:bg-sky-900/70 text-sky-600 dark:text-sky-300">XP</span>
+                </button>
+            </nav>
+
+            <!-- Sidebar Progress & Online Deploy Guide -->
+            <div class="p-4 m-4 rounded-2xl bg-gradient-to-br from-pink-50/90 to-sky-50/90 dark:from-slate-800/80 dark:to-slate-800/50 border border-pink-200/70 dark:border-slate-700/70 space-y-3">
+                <div>
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                        <span>Đã thuộc vào Kho</span>
+                        <span id="sidebar-progress-text" class="text-pink-500 dark:text-pink-400">0%</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-white dark:bg-slate-700 rounded-full overflow-hidden p-0.5">
+                        <div id="sidebar-progress-bar" class="h-full bg-gradient-to-r from-[#f472b6] to-[#38bdf8] rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <button onclick="openOnlineGuideModal()" class="w-full py-2 px-3 rounded-xl bg-white/90 dark:bg-slate-900 hover:bg-pink-50 dark:hover:bg-slate-800 border border-sky-200 dark:border-slate-700 text-sky-600 dark:text-sky-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all">
+                    <span>🌐</span>
+                    <span>Đưa Linbun Lên Online</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ==================== MAIN WORKSPACE ==================== -->
+        <div class="flex-1 lg:pl-72 flex flex-col min-h-screen pb-24 lg:pb-8">
+            <!-- Top Header Bar -->
+            <header class="sticky top-0 z-20 bg-white/80 dark:bg-[#191627]/85 backdrop-blur-xl border-b border-pink-200/70 dark:border-pink-500/20">
+                <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2.5">
+                    <!-- Mobile Brand -->
+                    <div class="flex items-center gap-2 lg:hidden">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#f472b6] to-[#38bdf8] flex items-center justify-center text-white text-lg shadow-sm">🐰</div>
+                        <span class="font-display font-extrabold text-xl bg-gradient-to-r from-pink-500 to-sky-500 bg-clip-text text-transparent">Linbun</span>
+                        <span id="mobile-total-badge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-pink-100 dark:bg-slate-800 text-pink-600 dark:text-sky-300">64</span>
+                    </div>
+
+                    <!-- Quick Stat Pills -->
+                    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                        <button onclick="switchModule('new_vocab')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/50 border border-pink-200/80 dark:border-pink-800/50 text-pink-600 dark:text-pink-300 text-xs font-bold whitespace-nowrap">
+                            <span>🌱</span>
+                            <span id="stat-new-pill">Từ mới: 64</span>
+                        </button>
+
+                        <button onclick="switchModule('learned_vault')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200/80 dark:border-sky-800/50 text-sky-600 dark:text-sky-300 text-xs font-bold whitespace-nowrap">
+                            <span>🎓</span>
+                            <span id="stat-learned-pill">Đã học: 0</span>
+                        </button>
+
+                        <div class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-pink-50 to-sky-50 dark:from-pink-950/40 dark:to-sky-950/40 border border-pink-200/60 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold whitespace-nowrap">
+                            <span>✨</span>
+                            <span id="stat-xp-pill">0 XP</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Toolbar -->
+                    <div class="flex items-center gap-2">
+                        <button onclick="downloadOnlineAppHtml()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] hover:opacity-95 text-white text-xs font-bold shadow-md shadow-pink-400/20 transition-all whitespace-nowrap" title="Xuất toàn bộ app Linbun kèm dữ liệu của bạn thành 1 file index.html">
+                            <span>⬇️</span>
+                            <span class="hidden sm:inline">Tải file index.html</span>
+                            <span class="sm:hidden">Tải App</span>
+                        </button>
+
+                        <div class="inline-flex rounded-xl bg-pink-50/90 dark:bg-slate-800 p-1 border border-pink-200/70 dark:border-slate-700">
+                            <button onclick="setAccent('en-US')" id="btn-accent-us" class="px-2 py-0.5 rounded-lg text-xs font-bold transition-all">US 🇺🇸</button>
+                            <button onclick="setAccent('en-GB')" id="btn-accent-uk" class="px-2 py-0.5 rounded-lg text-xs font-bold transition-all">UK 🇬🇧</button>
+                        </div>
+
+                        <button onclick="toggleTheme()" class="px-2.5 py-2 rounded-xl bg-sky-50 dark:bg-slate-800 hover:bg-sky-100 dark:hover:bg-slate-700 text-sky-600 dark:text-pink-300 border border-sky-200/80 dark:border-slate-700 text-xs font-bold transition-colors flex items-center gap-1" title="Chuyển đổi Sáng Pastel / Tối Pastel">
+                            <span class="dark:hidden">🌸 Sáng Pastel</span>
+                            <span class="hidden dark:inline">🌙 Tối Pastel</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 4-Card Summary Strip -->
+            <section class="max-w-5xl w-full mx-auto px-4 sm:px-6 pt-5">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div onclick="switchModule('new_vocab')" class="cursor-pointer bg-white/90 dark:bg-[#191627]/90 rounded-2xl border border-pink-200/80 dark:border-pink-500/20 p-3.5 sm:p-4 shadow-sm hover:border-pink-400 transition-all">
+                        <div class="flex items-center justify-between text-xs font-bold text-pink-500 dark:text-pink-300">
+                            <span>Từ mới cần học</span>
+                            <span>🌱</span>
+                        </div>
+                        <div id="dash-new-count" class="font-display text-2xl font-extrabold text-slate-900 dark:text-white mt-1">64</div>
+                    </div>
+
+                    <div onclick="setNewVocabFilter('latest_batch'); switchModule('new_vocab');" class="cursor-pointer bg-white/90 dark:bg-[#191627]/90 rounded-2xl border border-rose-200/80 dark:border-rose-500/20 p-3.5 sm:p-4 shadow-sm hover:border-rose-400 transition-all">
+                        <div class="flex items-center justify-between text-xs font-bold text-rose-500 dark:text-rose-300">
+                            <span>Đợt vừa scan/nhập</span>
+                            <span>🆕</span>
+                        </div>
+                        <div id="dash-batch-count" class="font-display text-2xl font-extrabold text-slate-900 dark:text-white mt-1">0</div>
+                    </div>
+
+                    <div onclick="switchModule('learned_vault')" class="cursor-pointer bg-white/90 dark:bg-[#191627]/90 rounded-2xl border border-sky-200/80 dark:border-sky-500/20 p-3.5 sm:p-4 shadow-sm hover:border-sky-400 transition-all">
+                        <div class="flex items-center justify-between text-xs font-bold text-sky-500 dark:text-sky-300">
+                            <span>Kho từ đã học</span>
+                            <span>🎓</span>
+                        </div>
+                        <div id="dash-learned-count" class="font-display text-2xl font-extrabold text-slate-900 dark:text-white mt-1">0</div>
+                    </div>
+
+                    <div onclick="switchModule('game_arena')" class="cursor-pointer bg-gradient-to-br from-pink-50/95 to-sky-50/95 dark:from-pink-950/30 dark:to-sky-950/30 rounded-2xl border border-pink-200/80 dark:border-sky-500/20 p-3.5 sm:p-4 shadow-sm hover:border-sky-400 transition-all">
+                        <div class="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
+                            <span>Điểm XP & Tiến độ</span>
+                            <span>✨</span>
+                        </div>
+                        <div id="dash-xp-pct" class="font-display text-xl sm:text-2xl font-extrabold bg-gradient-to-r from-pink-500 to-sky-500 bg-clip-text text-transparent mt-1">0 XP • 0%</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dynamic Module Content Area -->
+            <main id="app-content" class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-6"></main>
+        </div>
+
+        <!-- ==================== MOBILE BOTTOM NAVIGATION ==================== -->
+        <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-[#191627]/95 backdrop-blur-xl border-t border-pink-200/80 dark:border-pink-500/20 px-1.5 py-1.5 flex items-center justify-around">
+            <button onclick="switchModule('new_vocab')" data-nav="new_vocab" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl text-[11px] font-bold flex-1">
+                <span class="text-base">🌱</span>
+                <span>Từ mới</span>
+            </button>
+            <button onclick="switchModule('learned_vault')" data-nav="learned_vault" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl text-[11px] font-bold flex-1">
+                <span class="text-base">🎓</span>
+                <span>Kho đã học</span>
+            </button>
+            <button onclick="switchModule('import_vocab')" data-nav="import_vocab" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl text-[11px] font-bold flex-1">
+                <span class="text-base">📷</span>
+                <span>Scan từ</span>
+            </button>
+            <button onclick="switchModule('game_arena')" data-nav="game_arena" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl text-[11px] font-bold flex-1">
+                <span class="text-base">🎮</span>
+                <span>Đấu trường</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- ==================== ONLINE DEPLOYMENT MODAL ==================== -->
+    <div id="online-guide-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4" onclick="if(event.target===this) closeOnlineGuideModal()">
+        <div class="bg-white dark:bg-[#1c182c] rounded-3xl border border-pink-200 dark:border-pink-500/30 max-w-xl w-full p-6 sm:p-7 shadow-2xl animate-fade-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-pink-100 dark:border-slate-800">
+                <h3 class="font-display font-extrabold text-xl text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>🌐</span>
+                    <span>Đưa Linbun Lên Online Miễn Phí</span>
+                </h3>
+                <button onclick="closeOnlineGuideModal()" class="p-2 rounded-xl hover:bg-pink-50 dark:hover:bg-slate-800 text-slate-500">✕</button>
+            </div>
+            <div class="mt-4 space-y-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p>Toàn bộ ứng dụng <strong>Linbun</strong> cùng 64 từ vựng IELTS, Kho từ đã học và từ vựng bạn vừa nhập được đóng gói trong <strong>1 tệp HTML duy nhất</strong>.</p>
+                <div class="p-4 rounded-2xl bg-pink-50/80 dark:bg-pink-950/30 border border-pink-200 dark:border-pink-800/50 space-y-1.5">
+                    <div class="font-bold text-pink-600 dark:text-pink-300">Cách 1: Netlify Drop (Nhanh 15 giây)</div>
+                    <ol class="list-decimal list-inside space-y-1 text-xs sm:text-sm">
+                        <li>Bấm nút <strong>"⬇️ Tải file index.html"</strong> ngay trên thanh công cụ.</li>
+                        <li>Truy cập <a href="https://app.netlify.com/drop" target="_blank" rel="noopener" class="underline font-bold text-sky-600 dark:text-sky-400">app.netlify.com/drop</a> và kéo thả tệp <code>index.html</code> vào.</li>
+                        <li>Nhận ngay đường dẫn <code>https://linbun-cua-ban.netlify.app</code> để học trên mọi thiết bị!</li>
+                    </ol>
+                </div>
+                <div class="p-4 rounded-2xl bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/50 space-y-1.5">
+                    <div class="font-bold text-sky-600 dark:text-sky-300">Cách 2: GitHub Pages (Lưu trữ vĩnh viễn)</div>
+                    <p class="text-xs sm:text-sm">Tải <code>index.html</code> lên một Repository công khai trên GitHub → vào <strong>Settings → Pages → Branch: main → Save</strong> để nhận link web cố định trọn đời.</p>
+                </div>
+            </div>
+            <div class="mt-6 flex flex-wrap justify-end gap-3">
+                <button onclick="downloadOnlineAppHtml()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white text-xs sm:text-sm font-bold shadow-md">
+                    ⬇️ Tải file index.html ngay
+                </button>
+                <button onclick="closeOnlineGuideModal()" class="px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold">
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Toast Notifications -->
+    <div id="toast-container" class="fixed top-16 sm:top-auto sm:bottom-6 right-4 left-4 sm:left-auto z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        /**
+         * ============================================================================
+         * 1. BUILT-IN 64 IELTS VOCABULARY DATASET (5 TOPICS)
+         *    Bạn có thể thêm/sửa trực tiếp từ vựng mặc định tại mảng này.
+         * ============================================================================
+         */
+        const DEFAULT_VOCABULARY = [
+            // --- Chủ đề 1: Môi trường sống & Quy định (5 từ) ---
+            { id: 'env-1', category: 'Môi trường sống & Quy định', word: 'inhospitable', pos: 'adj', ipa: '/ˌɪnhɒˈspɪtəbl/', meaningVi: 'Khắc nghiệt, khó sinh sống', example: 'Few species can survive in the inhospitable climate of the high desert.', exampleVi: 'Rất ít loài có thể sinh tồn trong khí hậu khắc nghiệt của vùng sa mạc cao.' },
+            { id: 'env-2', category: 'Môi trường sống & Quy định', word: 'polar', pos: 'adj', ipa: '/ˈpəʊlə(r)/', meaningVi: 'Thuộc vùng cực', example: 'Melting polar ice caps are causing global sea levels to rise steadily.', exampleVi: 'Các chỏm băng vùng cực tan chảy đang khiến mực nước biển toàn cầu dâng lên đều đặn.' },
+            { id: 'env-3', category: 'Môi trường sống & Quy định', word: 'deteriorate', pos: 'v', ipa: '/dɪˈtɪəriəreɪt/', meaningVi: 'Xấu đi, trở nên tồi tệ', example: 'Air quality in industrial zones tends to deteriorate rapidly without strict controls.', exampleVi: 'Chất lượng không khí ở các khu công nghiệp có xu hướng xấu đi nhanh chóng nếu thiếu kiểm soát chặt chẽ.' },
+            { id: 'env-4', category: 'Môi trường sống & Quy định', word: 'regulation', pos: 'n', ipa: '/ˌreɡjuˈleɪʃn/', meaningVi: 'Luật, quy tắc', example: 'New environmental regulations require factories to cut carbon emissions by 30%.', exampleVi: 'Các quy định môi trường mới yêu cầu nhà máy cắt giảm 30% lượng khí thải carbon.' },
+            { id: 'env-5', category: 'Môi trường sống & Quy định', word: 'rescue', pos: 'n/v', ipa: '/ˈreskjuː/', meaningVi: 'Sự giải cứu', example: 'Marine biologists organized a rescue mission to save the stranded whales.', exampleVi: 'Các nhà sinh vật biển đã tổ chức một chiến dịch giải cứu đàn cá voi mắc cạn.' },
+
+            // --- Chủ đề 2: Tương lai việc làm (28 từ) ---
+            { id: 'work-1', category: 'Tương lai việc làm', word: 'switch to something', pos: 'phr.v', ipa: '/swɪtʃ tuː ˈsʌmθɪŋ/', meaningVi: 'Chuyển sang điều gì', example: 'Many companies are encouraging staff to switch to remote working models.', exampleVi: 'Nhiều công ty đang khuyến khích nhân viên chuyển sang mô hình làm việc từ xa.' },
+            { id: 'work-2', category: 'Tương lai việc làm', word: 'algorithms', pos: 'n', ipa: '/ˈælɡərɪðəmz/', meaningVi: 'Thuật toán', example: 'Modern recruitment platforms rely on algorithms to screen thousands of resumes.', exampleVi: 'Các nền tảng tuyển dụng hiện đại dựa vào thuật toán để sàng lọc hàng nghìn hồ sơ.' },
+            { id: 'work-3', category: 'Tương lai việc làm', word: 'fundamental', pos: 'adj', ipa: '/ˌfʌndəˈmentl/', meaningVi: 'Cơ bản, cốt lõi', example: 'Critical thinking remains a fundamental skill in an automated workplace.', exampleVi: 'Tư duy phản biện vẫn là kỹ năng cốt lõi trong môi trường làm việc tự động hóa.' },
+            { id: 'work-4', category: 'Tương lai việc làm', word: 'the so-called something', pos: 'phr', ipa: '/ðə ˌsəʊ ˈkɔːld/', meaningVi: 'Cái được gọi là gì đó', example: 'The so-called gig economy has reshaped how young people approach careers.', exampleVi: 'Cái được gọi là nền kinh tế việc làm tự do đã định hình lại cách người trẻ tiếp cận nghề nghiệp.' },
+            { id: 'work-5', category: 'Tương lai việc làm', word: 'undertake something', pos: 'v', ipa: '/ˌʌndəˈteɪk/', meaningVi: 'Đảm nhận việc gì', example: 'Software systems can now undertake routine data-entry tasks with zero fatigue.', exampleVi: 'Các hệ thống phần mềm giờ đây có thể đảm nhận công việc nhập liệu thường nhật mà không hề mệt mỏi.' },
+            { id: 'work-6', category: 'Tương lai việc làm', word: 'cognitive', pos: 'adj', ipa: '/ˈkɒɡnətɪv/', meaningVi: 'Thuộc về tư duy', example: 'Artificial intelligence is increasingly capable of performing complex cognitive tasks.', exampleVi: 'Trí tuệ nhân tạo ngày càng có khả năng thực hiện các nhiệm vụ tư duy phức tạp.' },
+            { id: 'work-7', category: 'Tương lai việc làm', word: 'take over something', pos: 'phr.v', ipa: '/teɪk ˈəʊvə(r)/', meaningVi: 'Đảm nhận, tiếp quản việc gì', example: 'Automated machines will likely take over repetitive assembly-line jobs.', exampleVi: 'Máy móc tự động nhiều khả năng sẽ tiếp quản các công việc dây chuyền lặp đi lặp lại.' },
+            { id: 'work-8', category: 'Tương lai việc làm', word: 'novice', pos: 'n', ipa: '/ˈnɒvɪs/', meaningVi: 'Người mới, nhân sự mới', example: 'Even a novice analyst can generate accurate forecasts using AI assistants.', exampleVi: 'Ngay cả một chuyên viên phân tích mới vào nghề cũng có thể tạo dự báo chính xác nhờ trợ lý AI.' },
+            { id: 'work-9', category: 'Tương lai việc làm', word: 'the extent to which', pos: 'phr', ipa: '/ði ɪkˈstent tuː wɪtʃ/', meaningVi: 'Mức độ mà', example: 'Researchers are studying the extent to which automation affects wage growth.', exampleVi: 'Các nhà nghiên cứu đang xem xét mức độ mà tự động hóa tác động đến tăng trưởng tiền lương.' },
+            { id: 'work-10', category: 'Tương lai việc làm', word: 'monitor something', pos: 'v', ipa: '/ˈmɒnɪtə(r)/', meaningVi: 'Giám sát, điều hành, theo dõi', example: 'Digital tools allow managers to monitor project progress in real time.', exampleVi: 'Các công cụ số cho phép nhà quản lý theo dõi tiến độ dự án theo thời gian thực.' },
+            { id: 'work-11', category: 'Tương lai việc làm', word: 'telecommunications', pos: 'n', ipa: '/ˌtelikəˌmjuːnɪˈkeɪʃnz/', meaningVi: 'Lĩnh vực viễn thông', example: 'Advances in telecommunications have made global collaboration effortless.', exampleVi: 'Những tiến bộ trong lĩnh vực viễn thông giúp việc hợp tác toàn cầu trở nên dễ dàng.' },
+            { id: 'work-12', category: 'Tương lai việc làm', word: 'assess something', pos: 'v', ipa: '/əˈses/', meaningVi: 'Đánh giá điều gì', example: 'Organizations must carefully assess the ethical risks of deploying automated tools.', exampleVi: 'Các tổ chức phải đánh giá cẩn trọng rủi ro đạo đức khi triển khai công cụ tự động.' },
+            { id: 'work-13', category: 'Tương lai việc làm', word: 'short-sighted', pos: 'adj', ipa: '/ˌʃɔːt ˈsaɪtɪd/', meaningVi: 'Thiển cận', example: 'Cutting employee training budgets to save money is a short-sighted strategy.', exampleVi: 'Cắt giảm ngân sách đào tạo nhân viên để tiết kiệm chi phí là một chiến lược thiển cận.' },
+            { id: 'work-14', category: 'Tương lai việc làm', word: 'creep into something', pos: 'phr.v', ipa: '/kriːp ˈɪntuː/', meaningVi: 'Dần len lỏi vào và gây ảnh hưởng, thường tiêu cực', example: 'Unconscious human bias can easily creep into machine-learning datasets.', exampleVi: 'Định kiến vô thức của con người có thể dễ dàng len lỏi vào các bộ dữ liệu học máy.' },
+            { id: 'work-15', category: 'Tương lai việc làm', word: 'work to their own advantage', pos: 'phr', ipa: '/wɜːk tuː ðeər əʊn ədˈvɑːntɪdʒ/', meaningVi: 'Làm để có lợi cho mình', example: 'Employees who master new technologies can make digital shifts work to their own advantage.', exampleVi: 'Những nhân viên làm chủ công nghệ mới có thể biến sự chuyển dịch số hoạt động có lợi cho mình.' },
+            { id: 'work-16', category: 'Tương lai việc làm', word: 'transparent', pos: 'adj', ipa: '/trænsˈpærənt/', meaningVi: 'Minh bạch', example: 'Automated decision-making processes should be transparent and auditable.', exampleVi: 'Các quy trình ra quyết định tự động cần phải minh bạch và có thể kiểm chứng.' },
+            { id: 'work-17', category: 'Tương lai việc làm', word: 'dilemmas', pos: 'n', ipa: '/dɪˈleməz/', meaningVi: 'Tình thế tiến thoái lưỡng nan', example: 'Rapid technological change presents policymakers with difficult ethical dilemmas.', exampleVi: 'Sự thay đổi công nghệ nhanh chóng đặt các nhà hoạch định chính sách trước những tình thế lưỡng nan về đạo đức.' },
+            { id: 'work-18', category: 'Tương lai việc làm', word: 'fallacy', pos: 'n', ipa: '/ˈfæləsi/', meaningVi: 'Sự lầm tưởng, sai lầm hoặc ngụy biện', example: 'The idea that machines will eliminate all human work is a widespread economic fallacy.', exampleVi: 'Quan niệm rằng máy móc sẽ xóa sổ toàn bộ việc làm của con người là một sự lầm tưởng kinh tế phổ biến.' },
+            { id: 'work-19', category: 'Tương lai việc làm', word: 'assume that', pos: 'v', ipa: '/əˈsjuːm ðæt/', meaningVi: 'Giả định rằng', example: 'We should not assume that every white-collar profession is immune to automation.', exampleVi: 'Chúng ta không nên giả định rằng mọi nghề nghiệp văn phòng đều miễn nhiễm với tự động hóa.' },
+            { id: 'work-20', category: 'Tương lai việc làm', word: 'apocalyptic', pos: 'adj', ipa: '/əˌpɒkəˈlɪptɪk/', meaningVi: 'Thuộc về tận thế, cực kỳ tiêu cực', example: 'Media headlines often paint an apocalyptic picture of mass unemployment.', exampleVi: 'Các tiêu đề truyền thông thường vẽ nên bức tranh tận thế về nạn thất nghiệp hàng loạt.' },
+            { id: 'work-21', category: 'Tương lai việc làm', word: 'misguided', pos: 'adj', ipa: '/ˌmɪsˈɡaɪdɪd/', meaningVi: 'Không phù hợp, thiếu chính xác', example: 'Efforts to ban workplace innovation outright are largely misguided.', exampleVi: 'Những nỗ lực cấm đoán hoàn toàn đổi mới nơi làm việc phần lớn là thiếu chính xác.' },
+            { id: 'work-22', category: 'Tương lai việc làm', word: 'restrict something', pos: 'v', ipa: '/rɪˈstrɪkt/', meaningVi: 'Hạn chế điều gì', example: 'Overly strict laws might restrict legitimate research into medical robotics.', exampleVi: 'Luật lệ quá khắt khe có thể hạn chế các nghiên cứu chính đáng về robot y tế.' },
+            { id: 'work-23', category: 'Tương lai việc làm', word: 'advert', pos: 'n', ipa: '/ˈædvɜːt/', meaningVi: 'Sự xuất hiện', example: 'With the advert of high-speed computing, data analysis transformed overnight.', exampleVi: 'Với sự xuất hiện của điện toán tốc độ cao, việc phân tích dữ liệu đã thay đổi chỉ sau một đêm.' },
+            { id: 'work-24', category: 'Tương lai việc làm', word: 'redundancy', pos: 'n', ipa: '/rɪˈdʌndənsi/', meaningVi: 'Thừa mứa nhân công', example: 'Factory modernization led to widespread redundancy among unskilled workers.', exampleVi: 'Quá trình hiện đại hóa nhà máy đã dẫn đến tình trạng dư thừa nhân công phổ thông trên diện rộng.' },
+            { id: 'work-25', category: 'Tương lai việc làm', word: 'redeployment', pos: 'n', ipa: '/ˌriːdɪˈplɔɪmənt/', meaningVi: 'Sự luân chuyển', example: 'The firm invested in retraining programs to support staff redeployment.', exampleVi: 'Công ty đầu tư vào các chương trình đào tạo lại nhằm hỗ trợ luân chuyển nhân sự.' },
+            { id: 'work-26', category: 'Tương lai việc làm', word: 'astounding', pos: 'adj', ipa: '/əˈstaʊndɪŋ/', meaningVi: 'Đáng kinh ngạc', example: 'The speed at which language models process information is truly astounding.', exampleVi: 'Tốc độ xử lý thông tin của các mô hình ngôn ngữ thực sự đáng kinh ngạc.' },
+            { id: 'work-27', category: 'Tương lai việc làm', word: 'industrial revolution', pos: 'n', ipa: '/ɪnˌdʌstriəl ˌrevəˈluːʃn/', meaningVi: 'Cách mạng công nghiệp', example: 'Each industrial revolution has ultimately created more jobs than it destroyed.', exampleVi: 'Mỗi cuộc cách mạng công nghiệp rốt cuộc đều tạo ra nhiều việc làm hơn số việc làm bị mất đi.' },
+            { id: 'work-28', category: 'Tương lai việc làm', word: 'mass production', pos: 'n', ipa: '/ˌmæs prəˈdʌkʃn/', meaningVi: 'Sản xuất hàng loạt', example: 'Assembly lines made the mass production of affordable automobiles possible.', exampleVi: 'Dây chuyền lắp ráp đã giúp việc sản xuất hàng loạt ô tô giá phải chăng trở nên khả thi.' },
+
+            // --- Chủ đề 3: Ngành dịch vụ khách hàng (9 từ) ---
+            { id: 'hosp-1', category: 'Ngành dịch vụ khách hàng', word: 'hospitality industry', pos: 'n', ipa: '/ˌhɒspɪˈtæləti ˈɪndəstri/', meaningVi: 'Ngành công nghiệp dịch vụ khách hàng, như ăn uống, lưu trú, du lịch', example: 'The hospitality industry relies heavily on interpersonal warmth and attentiveness.', exampleVi: 'Ngành công nghiệp dịch vụ khách hàng phụ thuộc rất nhiều vào sự nồng hậu và chu đáo trong giao tiếp.' },
+            { id: 'hosp-2', category: 'Ngành dịch vụ khách hàng', word: 'retain something', pos: 'v', ipa: '/rɪˈteɪn/', meaningVi: 'Giữ lại điều gì', example: 'Competitive salaries and clear career paths help hotels retain experienced staff.', exampleVi: 'Mức lương cạnh tranh và lộ trình thăng tiến rõ ràng giúp các khách sạn giữ chân nhân viên giàu kinh nghiệm.' },
+            { id: 'hosp-3', category: 'Ngành dịch vụ khách hàng', word: 'a chain of', pos: 'phr', ipa: '/ə tʃeɪn ɒv/', meaningVi: 'Chuỗi', example: 'She manages operations for a chain of boutique eco-resorts across Southeast Asia.', exampleVi: 'Cô ấy điều hành hoạt động cho một chuỗi khu nghỉ dưỡng sinh thái cao cấp khắp Đông Nam Á.' },
+            { id: 'hosp-4', category: 'Ngành dịch vụ khách hàng', word: 'themed', pos: 'adj', ipa: '/θiːmd/', meaningVi: 'Theo chủ đề', example: 'Themed restaurants attract families by offering immersive dining experiences.', exampleVi: 'Các nhà hàng theo chủ đề thu hút gia đình nhờ mang lại trải nghiệm ẩm thực sống động.' },
+            { id: 'hosp-5', category: 'Ngành dịch vụ khách hàng', word: 'favorable', pos: 'adj', ipa: '/ˈfeɪvərəbl/', meaningVi: 'Tốt, tích cực', example: 'The new boutique hotel received overwhelmingly favorable reviews from international guests.', exampleVi: 'Khách sạn mới nhận được rất nhiều đánh giá tích cực từ du khách quốc tế.' },
+            { id: 'hosp-6', category: 'Ngành dịch vụ khách hàng', word: 'turnover', pos: 'n', ipa: '/ˈtɜːnəʊvə(r)/', meaningVi: 'Tỷ lệ nhân viên nghỉ việc', example: 'High staff turnover remains one of the biggest operational costs in catering.', exampleVi: 'Tỷ lệ nhân viên nghỉ việc cao vẫn là một trong những chi phí vận hành lớn nhất trong ngành ăn uống.' },
+            { id: 'hosp-7', category: 'Ngành dịch vụ khách hàng', word: 'be aligned with', pos: 'phr', ipa: '/bi əˈlaɪnd wɪð/', meaningVi: 'Phù hợp, tương thích với', example: 'Service standards must be aligned with the expectations of modern travelers.', exampleVi: 'Tiêu chuẩn dịch vụ phải phù hợp với kỳ vọng của du khách hiện đại.' },
+            { id: 'hosp-8', category: 'Ngành dịch vụ khách hàng', word: 'simultaneously', pos: 'adv', ipa: '/ˌsɪmlˈteɪniəsli/', meaningVi: 'Cùng một lúc', example: 'Front-desk staff often handle check-ins and phone inquiries simultaneously.', exampleVi: 'Nhân viên lễ tân thường xuyên xử lý thủ tục nhận phòng và cuộc gọi hỏi thông tin cùng một lúc.' },
+            { id: 'hosp-9', category: 'Ngành dịch vụ khách hàng', word: 'adequate', pos: 'adj', ipa: '/ˈædɪkwət/', meaningVi: 'Đủ, phù hợp', example: 'Every resort must maintain adequate staffing levels during peak holiday seasons.', exampleVi: 'Mọi khu nghỉ dưỡng phải duy trì đủ số lượng nhân sự trong mùa cao điểm lễ hội.' },
+
+            // --- Chủ đề 4: Khoa học tên lửa (4 từ) ---
+            { id: 'rock-1', category: 'Khoa học tên lửa', word: 'credit somebody with something', pos: 'phr', ipa: '/ˈkredɪt ˈsʌmbədi wɪð/', meaningVi: 'Ghi nhận ai là người tạo ra điều gì', example: 'Historians credit ancient Chinese inventors with developing the earliest gunpowder rockets.', exampleVi: 'Các nhà sử học ghi nhận các nhà phát minh Trung Hoa cổ đại là người tạo ra những tên lửa thuốc súng đầu tiên.' },
+            { id: 'rock-2', category: 'Khoa học tên lửa', word: 'civilization', pos: 'n', ipa: '/ˌsɪvəlaɪˈzeɪʃn/', meaningVi: 'Nền văn minh', example: 'Advances in propulsion technology marked a turning point for human civilization.', exampleVi: 'Những bước tiến trong công nghệ động cơ đẩy đã đánh dấu bước ngoặt cho nền văn minh nhân loại.' },
+            { id: 'rock-3', category: 'Khoa học tên lửa', word: 'compound', pos: 'n', ipa: '/ˈkɒmpaʊnd/', meaningVi: 'Hỗn hợp, hợp chất', example: 'Solid rocket boosters burn a carefully formulated chemical compound.', exampleVi: 'Tên lửa đẩy nhiên liệu rắn đốt cháy một hợp chất hóa học được pha chế cẩn mật.' },
+            { id: 'rock-4', category: 'Khoa học tên lửa', word: 'predictable', pos: 'adj', ipa: '/prɪˈdɪktəbl/', meaningVi: 'Có thể tiên đoán, dự đoán trước', example: 'Modern guidance systems keep orbital trajectories remarkably predictable.', exampleVi: 'Các hệ thống dẫn đường hiện đại giữ cho quỹ đạo bay có thể dự đoán trước một cách đáng kinh ngạc.' },
+
+            // --- Chủ đề 5: Phục hồi loài tuyệt chủng (18 từ) ---
+            { id: 'ext-1', category: 'Phục hồi loài tuyệt chủng', word: 'flock', pos: 'n', ipa: '/flɒk/', meaningVi: 'Đàn, thường là đàn chim', example: 'Passenger pigeons once flew across North America in a flock of billions.', exampleVi: 'Chim bồ câu viễn khách từng bay ngang qua Bắc Mỹ thành từng đàn lên tới hàng tỷ con.' },
+            { id: 'ext-2', category: 'Phục hồi loài tuyệt chủng', word: 'spectacle', pos: 'n', ipa: '/ˈspektəkl/', meaningVi: 'Cảnh tượng đẹp, ấn tượng', example: 'Witnessing migrating birds darken the sky was an unforgettable natural spectacle.', exampleVi: 'Chứng kiến đàn chim di cư che rợp bầu trời là một cảnh tượng thiên nhiên khó quên.' },
+            { id: 'ext-3', category: 'Phục hồi loài tuyệt chủng', word: 'premise', pos: 'n', ipa: '/ˈpremɪs/', meaningVi: 'Ý tưởng chính, chủ đạo', example: 'The core premise of de-extinction is using genetic engineering to revive lost traits.', exampleVi: 'Ý tưởng chủ đạo của việc phục hồi loài tuyệt chủng là dùng kỹ thuật di truyền để tái tạo các đặc tính đã mất.' },
+            { id: 'ext-4', category: 'Phục hồi loài tuyệt chủng', word: 'trial something', pos: 'v', ipa: '/ˈtraɪəl/', meaningVi: 'Thử nghiệm, đánh giá, kiểm tra', example: 'Conservationists plan to trial the reintroduction of edited hybrids in fenced reserves.', exampleVi: 'Các nhà bảo tồn dự định thử nghiệm việc tái thả các cá thể lai chỉnh sửa gen trong khu bảo tồn có rào chắn.' },
+            { id: 'ext-5', category: 'Phục hồi loài tuyệt chủng', word: 'strive to do something', pos: 'v', ipa: '/straɪv tuː duː/', meaningVi: 'Cố gắng làm điều gì', example: 'Geneticists strive to restore ecological functions that vanished centuries ago.', exampleVi: 'Các nhà di truyền học cố gắng khôi phục các chức năng sinh thái đã biến mất hàng thế kỷ trước.' },
+            { id: 'ext-6', category: 'Phục hồi loài tuyệt chủng', word: 'niche', pos: 'n', ipa: '/niːʃ/', meaningVi: 'Ngách, lỗ hổng (sinh thái)', example: 'When a keystone species disappears, its ecological niche is often left vacant.', exampleVi: 'Khi một loài chủ chốt biến mất, ngách sinh thái của nó thường bị bỏ trống.' },
+            { id: 'ext-7', category: 'Phục hồi loài tuyệt chủng', word: 'debilitating', pos: 'adj', ipa: '/dɪˈbɪlɪteɪtɪŋ/', meaningVi: 'Gây suy nhược, ảnh hưởng xấu', example: 'Inbreeding can cause debilitating genetic disorders in small wildlife populations.', exampleVi: 'Giao phối cận huyết có thể gây ra các rối loạn di truyền suy nhược ở quần thể động vật hoang dã nhỏ.' },
+            { id: 'ext-8', category: 'Phục hồi loài tuyệt chủng', word: 'contagious', pos: 'adj', ipa: '/kənˈteɪdʒəs/', meaningVi: 'Dễ lây lan', example: 'A single contagious pathogen can wipe out an entire isolated colony.', exampleVi: 'Chỉ một mầm bệnh dễ lây lan cũng có thể xóa sổ toàn bộ quần thể sống biệt lập.' },
+            { id: 'ext-9', category: 'Phục hồi loài tuyệt chủng', word: 'reverse something', pos: 'v', ipa: '/rɪˈvɜːs/', meaningVi: 'Làm đảo ngược điều gì', example: 'Biotechnology alone cannot reverse decades of habitat destruction.', exampleVi: 'Chỉ riêng công nghệ sinh học không thể làm đảo ngược hàng thập kỷ tàn phá môi trường sống.' },
+            { id: 'ext-10', category: 'Phục hồi loài tuyệt chủng', word: 'insertion', pos: 'n', ipa: '/ɪnˈsɜːʃn/', meaningVi: 'Sự ghép, thêm vào, bổ sung', example: 'Gene editing involves the precise insertion of ancient DNA sequences into living cells.', exampleVi: 'Chỉnh sửa gen bao gồm việc ghép chính xác các trình tự ADN cổ đại vào tế bào sống.' },
+            { id: 'ext-11', category: 'Phục hồi loài tuyệt chủng', word: 'strand', pos: 'n', ipa: '/strænd/', meaningVi: 'Sợi, mảnh nhỏ', example: 'Scientists extracted a well-preserved strand of DNA from a frozen mammoth tusk.', exampleVi: 'Các nhà khoa học đã chiết xuất một sợi ADN được bảo quản tốt từ ngà voi ma mút đóng băng.' },
+            { id: 'ext-12', category: 'Phục hồi loài tuyệt chủng', word: 'minimal', pos: 'adj', ipa: '/ˈmɪnɪml/', meaningVi: 'Nhỏ, không đáng kể', example: 'Edited embryos must pose minimal risk to existing native wildlife.', exampleVi: 'Các phôi được chỉnh sửa phải gây ra rủi ro không đáng kể đối với động vật bản địa hiện có.' },
+            { id: 'ext-13', category: 'Phục hồi loài tuyệt chủng', word: 'stagnant', pos: 'adj', ipa: '/ˈstæɡnənt/', meaningVi: 'Trì trệ', example: 'Funding for traditional habitat protection has remained stagnant in several regions.', exampleVi: 'Nguồn tài trợ cho bảo vệ sinh cảnh truyền thống vẫn trì trệ ở một số khu vực.' },
+            { id: 'ext-14', category: 'Phục hồi loài tuyệt chủng', word: 'resistance', pos: 'n', ipa: '/rɪˈzɪstəns/', meaningVi: 'Sức chống chịu, khả năng chịu đựng', example: 'Engineering cold resistance into Asian elephants could help them survive northern winters.', exampleVi: 'Tạo khả năng chống chịu lạnh cho voi châu Á có thể giúp chúng sống sót qua mùa đông phương Bắc.' },
+            { id: 'ext-15', category: 'Phục hồi loài tuyệt chủng', word: 'pinpoint something', pos: 'v', ipa: '/ˈpɪnpɔɪnt/', meaningVi: 'Xác định, chỉ ra', example: 'Researchers can now pinpoint the exact genes responsible for thick woolly coats.', exampleVi: 'Các nhà nghiên cứu giờ đây có thể xác định chính xác các gen quy định bộ lông len dày.' },
+            { id: 'ext-16', category: 'Phục hồi loài tuyệt chủng', word: 'icy', pos: 'adj', ipa: '/ˈaɪsi/', meaningVi: 'Băng giá', example: 'Woolly mammoths once grazed across the icy steppes of Siberia.', exampleVi: 'Voi ma mút lông xoăn từng gặm cỏ khắp các thảo nguyên băng giá ở Siberia.' },
+            { id: 'ext-17', category: 'Phục hồi loài tuyệt chủng', word: 'permafrost', pos: 'n', ipa: '/ˈpɜːməfrɒst/', meaningVi: 'Băng vĩnh cửu', example: 'Thawing permafrost has revealed remarkably intact remains of Ice Age mammals.', exampleVi: 'Lớp băng vĩnh cửu tan chảy đã hé lộ những di hài nguyên vẹn đáng kinh ngạc của động vật có vú Kỷ Băng Hà.' },
+            { id: 'ext-18', category: 'Phục hồi loài tuyệt chủng', word: 'moral hazard', pos: 'n', ipa: '/ˌmɒrəl ˈhæzəd/', meaningVi: 'Rủi ro về mặt đạo đức', example: 'Critics warn that de-extinction creates a moral hazard by reducing urgency to prevent extinctions today.', exampleVi: 'Các nhà phê bình cảnh báo rằng phục hồi loài tuyệt chủng tạo ra rủi ro đạo đức vì làm giảm tính cấp bách của việc ngăn chặn tuyệt chủng hiện nay.' }
+        ];
+
+        /**
+         * ============================================================================
+         * 2. PERSISTENT STATE (LOCALSTORAGE)
+         *    Quản lý tách biệt "🌱 Từ vựng mới" và "🎓 Kho từ đã học"
+         * ============================================================================
+         */
+        const STORAGE_KEY = 'linbun_pastel_v1';
+
+        const defaultState = {
+            darkMode: false,
+            accent: 'en-US',
+            xp: 0,
+            learnedIds: [],
+            customWords: [],
+            latestBatchIds: []
+        };
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return { ...defaultState };
+                return { ...defaultState, ...JSON.parse(raw) };
+            } catch (e) {
+                return { ...defaultState };
+            }
+        }
+
+        let appState = loadState();
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+            } catch (e) {
+                console.warn('Could not persist to localStorage:', e);
+            }
+            updateGlobalCounters();
+        }
+
+        let uiState = {
+            activeModule: 'new_vocab',
+
+            // Module A: Học từ vựng mới
+            newFilter: 'all_new',
+            newDeckOrder: [],
+            newIndex: 0,
+            newFlipped: false,
+
+            // Module B: Kho từ đã học
+            learnedSearch: '',
+            learnedCategoryFilter: 'Tất cả',
+            learnedViewMode: 'list',
+            learnedCardIndex: 0,
+            learnedCardFlipped: false,
+
+            // Module C: Scan & Nhập từ mới
+            importSubTab: 'scan_image',
+            previewImportedWords: [],
+            importStatusText: '',
+            importProgress: 0,
+            isEnriching: false,
+
+            // Module D: Đấu trường Game
+            gameSource: 'all_new',
+            gameMode: 'mixed',
+            gameTotalTarget: 0,
+            gameQueue: [],
+            gameConqueredIds: [],
+            gameCurrentItem: null,
+            gameAnswered: false,
+            gameIsCorrect: false,
+            gameSelectedOptId: null,
+            gameTypedValue: '',
+            gameHintLetters: 0,
+            gameShowIpaHint: false,
+            gameCombo: 0,
+            gameMaxCombo: 0,
+            gameRoundXp: 0,
+            gameMistakeCount: 0,
+            gameFinished: false,
+            gameTransferredToLearned: false
+        };
+
+        function getAllWords() {
+            return [...(appState.customWords || []), ...DEFAULT_VOCABULARY];
+        }
+
+        function getNewVocabularyList() {
+            const learnedSet = new Set(appState.learnedIds || []);
+            return getAllWords().filter(w => !learnedSet.has(w.id));
+        }
+
+        function getLearnedVocabularyList() {
+            const learnedSet = new Set(appState.learnedIds || []);
+            return getAllWords().filter(w => learnedSet.has(w.id));
+        }
+
+        function getCategories() {
+            return [...new Set(getAllWords().map(w => w.category))];
+        }
+
+        /**
+         * ============================================================================
+         * 3. THEME, SPEECH SYNTHESIS, SOUND FX & PASTEL CONFETTI
+         * ============================================================================
+         */
+        function applyTheme() {
+            document.documentElement.classList.toggle('dark', Boolean(appState.darkMode));
+        }
+
+        function toggleTheme() {
+            appState.darkMode = !appState.darkMode;
+            applyTheme();
+            saveState();
+        }
+
+        function setAccent(lang) {
+            appState.accent = lang;
+            saveState();
+            updateAccentButtons();
+            showToast(lang === 'en-US' ? '🇺🇸 Đã chọn giọng Anh - Mỹ (US)' : '🇬🇧 Đã chọn giọng Anh - Anh (UK)', 'info');
+        }
+
+        function updateAccentButtons() {
+            const usBtn = document.getElementById('btn-accent-us');
+            const ukBtn = document.getElementById('btn-accent-uk');
+            if (!usBtn || !ukBtn) return;
+            const activeCls = 'bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white shadow-sm';
+            const inactiveCls = 'text-slate-600 dark:text-slate-300 hover:text-pink-500';
+            usBtn.className = `px-2 py-0.5 rounded-lg text-xs font-bold transition-all ${appState.accent === 'en-US' ? activeCls : inactiveCls}`;
+            ukBtn.className = `px-2 py-0.5 rounded-lg text-xs font-bold transition-all ${appState.accent === 'en-GB' ? activeCls : inactiveCls}`;
+        }
+
+        function cleanSpeechWord(word) {
+            return (word || '').replace(/\bsomething\b/gi, '').replace(/\bsomebody\b/gi, '').replace(/\s+/g, ' ').trim();
+        }
+
+        function escapeJsAttr(str) {
+            return (str || '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/"/g, '&quot;')
+                .replace(/\r?\n/g, ' ');
+        }
+
+        function speakText(text, rate = 1.0, btnEl = null) {
+            if (!text || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = appState.accent || 'en-US';
+            utterance.rate = rate;
+            const voices = window.speechSynthesis.getVoices();
+            const matched = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(utterance.lang.toLowerCase()));
+            if (matched) utterance.voice = matched;
+
+            if (btnEl) {
+                btnEl.classList.add('speaking-active');
+                utterance.onend = () => btnEl.classList.remove('speaking-active');
+                utterance.onerror = () => btnEl.classList.remove('speaking-active');
+            }
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Web Audio API Sound Effects
+        let audioCtx = null;
+        function playGameSound(type) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const now = audioCtx.currentTime;
+
+                const playNote = (freq, start, dur, wave = 'sine', gainVal = 0.14) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = wave;
+                    osc.frequency.setValueAtTime(freq, now + start);
+                    gain.gain.setValueAtTime(gainVal, now + start);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + start + dur);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + start);
+                    osc.stop(now + start + dur);
+                };
+
+                if (type === 'correct') {
+                    playNote(523.25, 0, 0.14, 'triangle', 0.16);
+                    playNote(659.25, 0.08, 0.16, 'triangle', 0.16);
+                    playNote(783.99, 0.16, 0.24, 'triangle', 0.18);
+                } else if (type === 'wrong') {
+                    playNote(240, 0, 0.18, 'sawtooth', 0.1);
+                    playNote(190, 0.14, 0.26, 'sawtooth', 0.1);
+                } else if (type === 'victory') {
+                    [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+                        playNote(f, idx * 0.1, 0.3, 'triangle', 0.18);
+                    });
+                }
+            } catch (e) {
+                // Ignore audio block if user hasn't interacted yet
+            }
+        }
+
+        // Pastel Pink & Sky Blue Confetti Burst
+        function launchPastelConfetti(count = 45) {
+            const canvas = document.getElementById('confetti-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const colors = ['#f472b6', '#fbcfe8', '#38bdf8', '#bae6fd', '#f9a8d4', '#7dd3fc', '#fde047'];
+            const particles = Array.from({ length: count }, () => ({
+                x: canvas.width * (0.25 + Math.random() * 0.5),
+                y: canvas.height * 0.35,
+                vx: (Math.random() - 0.5) * 14,
+                vy: -Math.random() * 11 - 3,
+                size: Math.random() * 7 + 4,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rot: Math.random() * 360,
+                vRot: (Math.random() - 0.5) * 12,
+                alpha: 1
+            }));
+
+            let frame = 0;
+            function animate() {
+                frame++;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let active = false;
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.35;
+                    p.rot += p.vRot;
+                    p.alpha -= 0.016;
+                    if (p.alpha > 0) {
+                        active = true;
+                        ctx.save();
+                        ctx.globalAlpha = Math.max(0, p.alpha);
+                        ctx.translate(p.x, p.y);
+                        ctx.rotate((p.rot * Math.PI) / 180);
+                        ctx.fillStyle = p.color;
+                        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.65);
+                        ctx.restore();
+                    }
+                });
+                if (active && frame < 90) requestAnimationFrame(animate);
+                else ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function showToast(message, type = 'success') {
+            const box = document.getElementById('toast-container');
+            if (!box) return;
+            const el = document.createElement('div');
+            const bg = type === 'error'
+                ? 'bg-rose-500 text-white'
+                : type === 'info'
+                    ? 'bg-sky-500 text-white'
+                    : 'bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white';
+            el.className = `pointer-events-auto px-4 py-3 rounded-2xl shadow-lg text-xs sm:text-sm font-bold animate-fade-up ${bg}`;
+            el.textContent = message;
+            box.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transition = 'opacity 0.25s';
+                setTimeout(() => el.remove(), 260);
+            }, 2600);
+        }
+
+        /**
+         * ============================================================================
+         * 4. NAVIGATION, DASHBOARD COUNTERS & STANDALONE HTML EXPORT
+         * ============================================================================
+         */
+        function updateGlobalCounters() {
+            const total = getAllWords().length;
+            const newCount = getNewVocabularyList().length;
+            const learnedCount = getLearnedVocabularyList().length;
+            const batchCount = (appState.latestBatchIds || []).filter(id => getAllWords().some(w => w.id === id)).length;
+            const pct = total > 0 ? Math.round((learnedCount / total) * 100) : 0;
+
+            const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            setText('sidebar-total-badge', `${total} từ`);
+            setText('mobile-total-badge', `${total}`);
+            setText('badge-new-count', `${newCount}`);
+            setText('badge-learned-count', `${learnedCount}`);
+            setText('stat-new-pill', `Từ mới: ${newCount}`);
+            setText('stat-learned-pill', `Đã học: ${learnedCount}`);
+            setText('stat-xp-pill', `${appState.xp || 0} XP`);
+            setText('dash-new-count', `${newCount}`);
+            setText('dash-batch-count', `${batchCount}`);
+            setText('dash-learned-count', `${learnedCount}`);
+            setText('dash-xp-pct', `${appState.xp || 0} XP • ${pct}%`);
+            setText('sidebar-progress-text', `${pct}%`);
+
+            const bar = document.getElementById('sidebar-progress-bar');
+            if (bar) bar.style.width = `${pct}%`;
+
+            const batchBadge = document.getElementById('badge-batch-count');
+            if (batchBadge) {
+                if (batchCount > 0) {
+                    batchBadge.textContent = `+${batchCount}`;
+                    batchBadge.classList.remove('hidden');
+                } else {
+                    batchBadge.classList.add('hidden');
+                }
+            }
+        }
+
+        function switchModule(moduleName) {
+            uiState.activeModule = moduleName;
+
+            // Update desktop & mobile active button styles
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const isActive = btn.dataset.nav === moduleName;
+                btn.className = `nav-btn w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all ${
+                    isActive
+                        ? 'bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white shadow-md shadow-pink-400/20'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-pink-50/80 dark:hover:bg-slate-800/70'
+                }`;
+            });
+
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                const isActive = btn.dataset.nav === moduleName;
+                btn.className = `mobile-nav-btn flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl text-[11px] font-bold flex-1 transition-all ${
+                    isActive
+                        ? 'bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400'
+                }`;
+            });
+
+            if (moduleName === 'new_vocab') renderNewVocabModule();
+            else if (moduleName === 'learned_vault') renderLearnedVaultModule();
+            else if (moduleName === 'import_vocab') renderImportModule();
+            else if (moduleName === 'game_arena') {
+                if (!uiState.gameCurrentItem && !uiState.gameFinished) {
+                    const batchWords = getGameSourceWords('latest_batch');
+                    const defaultSrc = batchWords.length > 0 ? 'latest_batch' : 'all_new';
+                    startGameArena(defaultSrc, uiState.gameMode);
+                } else {
+                    renderGameArenaModule();
+                }
+            }
+        }
+
+        function openOnlineGuideModal() {
+            const modal = document.getElementById('online-guide-modal');
+            if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+        }
+
+        function closeOnlineGuideModal() {
+            const modal = document.getElementById('online-guide-modal');
+            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        }
+
+        function downloadOnlineAppHtml() {
+            // Embed user's custom words & progress directly into exported index.html
+            let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+            const serializedCustom = JSON.stringify(appState.customWords || []);
+            const serializedLearned = JSON.stringify(appState.learnedIds || []);
+            const serializedBatch = JSON.stringify(appState.latestBatchIds || []);
+
+            html = html.replace(
+                /const defaultState = \{[\s\S]*?\};/,
+                `const defaultState = {
+            darkMode: ${Boolean(appState.darkMode)},
+            accent: '${appState.accent || 'en-US'}',
+            xp: ${appState.xp || 0},
+            learnedIds: ${serializedLearned},
+            customWords: ${serializedCustom},
+            latestBatchIds: ${serializedBatch}
+        };`
+            );
+
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'index.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('⬇️ Đã tải tệp index.html kèm toàn bộ dữ liệu của bạn!', 'success');
+        }
+
+        /**
+         * ============================================================================
+         * 5. MODULE A: "🌱 HỌC TỪ VỰNG MỚI" (3D FLASHCARDS & PRONUNCIATION)
+         * ============================================================================
+         */
+        function setNewVocabFilter(filter) {
+            uiState.newFilter = filter;
+            uiState.newIndex = 0;
+            uiState.newFlipped = false;
+            syncNewDeckOrder(false);
+            if (uiState.activeModule === 'new_vocab') renderNewVocabModule();
+        }
+
+        function getFilteredNewWords() {
+            const newWords = getNewVocabularyList();
+            if (uiState.newFilter === 'latest_batch') {
+                const batchSet = new Set(appState.latestBatchIds || []);
+                return newWords.filter(w => batchSet.has(w.id));
+            }
+            if (uiState.newFilter === 'all_new') return newWords;
+            return newWords.filter(w => w.category === uiState.newFilter);
+        }
+
+        function syncNewDeckOrder(shuffle = false) {
+            const list = getFilteredNewWords();
+            let ids = list.map(w => w.id);
+            if (shuffle) {
+                ids = ids.sort(() => Math.random() - 0.5);
+            }
+            uiState.newDeckOrder = ids;
+            if (uiState.newIndex >= ids.length) uiState.newIndex = 0;
+        }
+
+        function getOrderedNewDeck() {
+            const list = getFilteredNewWords();
+            const map = new Map(list.map(w => [w.id, w]));
+            const ordered = (uiState.newDeckOrder || []).map(id => map.get(id)).filter(Boolean);
+            const existingIds = new Set(ordered.map(w => w.id));
+            list.forEach(w => { if (!existingIds.has(w.id)) ordered.push(w); });
+            return ordered;
+        }
+
+        function flipNewCard() {
+            uiState.newFlipped = !uiState.newFlipped;
+            renderNewVocabModule();
+        }
+
+        function nextNewCard() {
+            const deck = getOrderedNewDeck();
+            if (!deck.length) return;
+            uiState.newIndex = (uiState.newIndex + 1) % deck.length;
+            uiState.newFlipped = false;
+            renderNewVocabModule();
+        }
+
+        function prevNewCard() {
+            const deck = getOrderedNewDeck();
+            if (!deck.length) return;
+            uiState.newIndex = (uiState.newIndex - 1 + deck.length) % deck.length;
+            uiState.newFlipped = false;
+            renderNewVocabModule();
+        }
+
+        function speakCurrentNewCard(rate = 1.0, btnEl = null) {
+            const deck = getOrderedNewDeck();
+            if (!deck.length) return;
+            const current = deck[uiState.newIndex] || deck[0];
+            speakText(cleanSpeechWord(current.word), rate, btnEl);
+        }
+
+        function markNewWordAsLearned(wordId) {
+            if (!appState.learnedIds.includes(wordId)) {
+                appState.learnedIds.push(wordId);
+                appState.xp = (appState.xp || 0) + 15;
+            }
+            uiState.newFlipped = false;
+            saveState();
+            playGameSound('correct');
+            showToast('🎓 Đã chuyển vào Kho từ đã học (+15 XP)!', 'success');
+            renderNewVocabModule();
+        }
+
+        function renderNewVocabModule() {
+            const container = document.getElementById('app-content');
+            const allNew = getNewVocabularyList();
+            const batchNew = allNew.filter(w => (appState.latestBatchIds || []).includes(w.id));
+
+            if (uiState.newFilter === 'latest_batch' && batchNew.length === 0) {
+                uiState.newFilter = 'all_new';
+            }
+
+            const categories = getCategories();
+            const deck = getOrderedNewDeck();
+            if (uiState.newIndex >= deck.length) uiState.newIndex = 0;
+
+            const filterPills = [
+                ...(batchNew.length > 0 ? [{ key: 'latest_batch', label: `🆕 Đợt vừa scan/nhập (${batchNew.length})` }] : []),
+                { key: 'all_new', label: `🌱 Tất cả từ mới (${allNew.length})` },
+                ...categories.map(cat => {
+                    const cnt = allNew.filter(w => w.category === cat).length;
+                    return { key: cat, label: `${cat} (${cnt})` };
+                })
+            ];
+
+            const filterBarHtml = filterPills.map(p => `
+                <button onclick="setNewVocabFilter('${escapeJsAttr(p.key)}')" class="px-3.5 py-2 rounded-2xl text-xs font-bold border whitespace-nowrap transition-all ${
+                    uiState.newFilter === p.key
+                        ? 'bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white border-transparent shadow-sm'
+                        : 'bg-white/90 dark:bg-slate-900 border-pink-200/70 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-pink-400'
+                }">
+                    ${p.label}
+                </button>
+            `).join('');
+
+            if (deck.length === 0) {
+                container.innerHTML = `
+                    <div class="animate-fade-up space-y-5">
+                        <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">${filterBarHtml}</div>
+                        <div class="max-w-2xl mx-auto bg-white/95 dark:bg-[#191627] rounded-3xl border border-pink-200/80 dark:border-pink-500/20 p-8 sm:p-10 text-center shadow-xl">
+                            <div class="text-5xl mb-3">🎉🐰</div>
+                            <h2 class="font-display text-2xl font-extrabold text-slate-900 dark:text-white">Bạn đã học hết nhóm từ mới này!</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                                Tất cả từ đã được lưu an toàn trong <strong>🎓 Kho từ đã học</strong>. Bạn có thể scan thêm từ mới hoặc vào Đấu trường Game để luyện phản xạ.
+                            </p>
+                            <div class="mt-6 flex flex-wrap justify-center gap-3">
+                                <button onclick="switchModule('import_vocab')" class="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white text-sm font-bold shadow-md">📷 Scan thêm từ mới</button>
+                                <button onclick="switchModule('learned_vault')" class="px-5 py-3 rounded-2xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-sm font-bold">🎓 Xem Kho từ đã học</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const currentWord = deck[uiState.newIndex];
+
+            container.innerHTML = `
+                <div class="animate-fade-up space-y-5">
+                    <!-- Header & Quick Game Trigger -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">🌱 Học Từ Vựng Mới</h2>
+                            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Chạm thẻ hoặc bấm <kbd class="px-1.5 py-0.5 rounded bg-pink-100 dark:bg-slate-800 text-pink-600 font-bold">Space</kbd> để lật • <kbd class="px-1.5 py-0.5 rounded bg-sky-100 dark:bg-slate-800 text-sky-600 font-bold">A</kbd> để nghe phát âm</p>
+                        </div>
+                        <button onclick="startGameArena('${escapeJsAttr(uiState.newFilter)}', 'mixed'); switchModule('game_arena');" class="self-start sm:self-auto px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white text-xs sm:text-sm font-extrabold shadow-md shadow-pink-400/20">
+                            🎮 Chơi Game bộ này (${deck.length} từ)
+                        </button>
+                    </div>
+
+                    <!-- Topic / Batch Filter Pills -->
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">${filterBarHtml}</div>
+
+                    <!-- 3D Flashcard -->
+                    <div class="max-w-2xl mx-auto perspective-1200 h-[360px] sm:h-[380px] cursor-pointer select-none" onclick="flipNewCard()">
+                        <div class="flip-card-inner ${uiState.newFlipped ? 'is-flipped' : ''}">
+                            <!-- Front Side -->
+                            <div class="flip-card-front bg-white/95 dark:bg-[#1b172b] rounded-3xl border-2 border-pink-200/90 dark:border-pink-500/30 shadow-xl p-6 sm:p-8 flex flex-col justify-between">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="px-3 py-1 rounded-xl text-xs font-bold bg-pink-50 dark:bg-pink-950/70 text-pink-600 dark:text-pink-300">${currentWord.category}</span>
+                                    <span class="px-3 py-1 rounded-xl text-xs font-extrabold bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-300">Thẻ ${uiState.newIndex + 1} / ${deck.length}</span>
+                                </div>
+
+                                <div class="text-center my-auto px-2">
+                                    <span class="inline-block px-3 py-0.5 rounded-full text-xs font-extrabold bg-gradient-to-r from-pink-100 to-sky-100 dark:from-pink-950 dark:to-sky-950 text-pink-600 dark:text-sky-300 mb-2">
+                                        ${formatPosBadge(currentWord.pos)}
+                                    </span>
+                                    <h3 class="font-display text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight break-words">${currentWord.word}</h3>
+                                    <p class="text-base sm:text-lg font-mono text-sky-500 dark:text-sky-300 mt-2">${currentWord.ipa || ''}</p>
+
+                                    <div class="mt-6 flex items-center justify-center gap-2.5">
+                                        <button type="button" onclick="event.stopPropagation(); speakCurrentNewCard(1.0, this)" class="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-pink-100 to-sky-100 dark:from-pink-950 dark:to-sky-950 hover:opacity-90 text-pink-700 dark:text-sky-300 font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm">
+                                            <span>🔊</span><span>Nghe chuẩn</span>
+                                        </button>
+                                        <button type="button" onclick="event.stopPropagation(); speakCurrentNewCard(0.72, this)" class="px-3.5 py-2.5 rounded-2xl bg-sky-50 dark:bg-slate-800 text-sky-600 dark:text-sky-300 font-bold text-xs sm:text-sm flex items-center gap-1">
+                                            <span>🐢</span><span>Nghe chậm</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="text-center text-xs text-slate-400">Chạm vào thẻ để lật xem nghĩa tiếng Việt & câu ví dụ</div>
+                            </div>
+
+                            <!-- Back Side -->
+                            <div class="flip-card-back bg-gradient-to-br from-[#fdf2f8] via-white to-[#eff6ff] dark:from-[#1f1a33] dark:via-[#191627] dark:to-[#172033] rounded-3xl border-2 border-sky-300 dark:border-sky-500/30 shadow-xl p-6 sm:p-8 flex flex-col justify-between">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-display font-extrabold text-lg text-slate-900 dark:text-white">${currentWord.word}</span>
+                                        <span class="text-xs font-bold text-pink-500">${formatPosBadge(currentWord.pos)}</span>
+                                    </div>
+                                    <button type="button" onclick="event.stopPropagation(); speakCurrentNewCard(1.0, this)" class="p-2 rounded-xl bg-pink-100 dark:bg-pink-950 text-pink-600 dark:text-pink-300" title="Phát âm">🔊</button>
+                                </div>
+
+                                <div class="my-auto">
+                                    <p class="font-display text-2xl sm:text-3xl font-extrabold text-pink-600 dark:text-pink-300 leading-snug">${currentWord.meaningVi}</p>
+
+                                    ${currentWord.example ? `
+                                        <div class="mt-4 p-4 rounded-2xl bg-white/95 dark:bg-slate-900/80 border border-sky-200/80 dark:border-slate-700">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <p class="text-sm font-medium text-slate-800 dark:text-slate-100 italic leading-relaxed">"${currentWord.example}"</p>
+                                                <button type="button" onclick="event.stopPropagation(); speakText('${escapeJsAttr(currentWord.example)}', 0.95, this)" class="shrink-0 p-2 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-300" title="Nghe câu ví dụ">🔊</button>
+                                            </div>
+                                            ${currentWord.exampleVi ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">${currentWord.exampleVi}</p>` : ''}
+                                        </div>
+                                    ` : ''}
+                                </div>
+
+                                <div class="pt-3 border-t border-pink-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                                    <span class="text-xs text-slate-400">Chạm để lật lại mặt trước</span>
+                                    <button type="button" onclick="event.stopPropagation(); markNewWordAsLearned('${escapeJsAttr(currentWord.id)}')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white text-xs font-extrabold shadow-sm">
+                                        ✅ Đã học xong → Kho đã học
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flashcard Controls -->
+                    <div class="max-w-2xl mx-auto flex flex-wrap items-center justify-center gap-2.5">
+                        <button onclick="prevNewCard()" class="px-4 py-2.5 rounded-2xl bg-white/90 dark:bg-slate-900 border border-pink-200/80 dark:border-slate-800 hover:border-pink-400 text-xs sm:text-sm font-bold">
+                            ⬅️ Trước
+                        </button>
+                        <button onclick="syncNewDeckOrder(true); renderNewVocabModule(); showToast('🔀 Đã xáo trộn bộ thẻ từ mới!', 'info');" class="px-4 py-2.5 rounded-2xl bg-sky-50 dark:bg-slate-900 border border-sky-200/80 dark:border-slate-800 text-sky-600 dark:text-sky-300 text-xs sm:text-sm font-bold">
+                            🔀 Xáo trộn
+                        </button>
+                        <button onclick="markNewWordAsLearned('${escapeJsAttr(currentWord.id)}')" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] hover:opacity-95 text-white text-xs sm:text-sm font-extrabold shadow-md shadow-pink-400/25">
+                            ✅ Đã học xong → Chuyển vào Kho đã học
+                        </button>
+                        <button onclick="nextNewCard()" class="px-4 py-2.5 rounded-2xl bg-white/90 dark:bg-slate-900 border border-pink-200/80 dark:border-slate-800 hover:border-pink-400 text-xs sm:text-sm font-bold">
+                            Tiếp ➡️
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * ============================================================================
+         * 6. MODULE B: "🎓 KHO TỪ ĐÃ HỌC" (SEPARATE LEARNED VAULT FOR REVIEW)
+         * ============================================================================
+         */
+        function moveWordBackToNew(wordId) {
+            appState.learnedIds = (appState.learnedIds || []).filter(id => id !== wordId);
+            saveState();
+            syncNewDeckOrder(false);
+            showToast('↩️ Đã đưa từ quay lại mục Học từ vựng mới!', 'info');
+            renderLearnedVaultModule();
+        }
+
+        function renderLearnedVaultModule() {
+            const container = document.getElementById('app-content');
+            const learnedAll = getLearnedVocabularyList();
+
+            if (learnedAll.length === 0) {
+                container.innerHTML = `
+                    <div class="animate-fade-up max-w-2xl mx-auto bg-white/95 dark:bg-[#191627] rounded-3xl border border-sky-200/80 dark:border-sky-500/20 p-8 sm:p-10 text-center shadow-xl">
+                        <div class="text-5xl mb-3">🎓🐰</div>
+                        <h2 class="font-display text-2xl font-extrabold text-slate-900 dark:text-white">Kho Từ Đã Học Đang Trống</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto">
+                            Khi bạn bấm <strong>"✅ Đã học xong"</strong> ở thẻ từ mới hoặc chinh phục xong trong <strong>Đấu trường Game</strong>, từ vựng sẽ được cất riêng tại đây để ôn tập lại bất cứ lúc nào.
+                        </p>
+                        <button onclick="switchModule('new_vocab')" class="mt-6 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white text-sm font-bold shadow-md">
+                            🌱 Bắt đầu học từ vựng mới
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const topicCounts = {};
+            learnedAll.forEach(w => {
+                topicCounts[w.category] = (topicCounts[w.category] || 0) + 1;
+            });
+
+            if (uiState.learnedCategoryFilter !== 'Tất cả' && !topicCounts[uiState.learnedCategoryFilter]) {
+                uiState.learnedCategoryFilter = 'Tất cả';
+            }
+
+            const topicStatsHtml = Object.entries(topicCounts).map(([cat, cnt]) => `
+                <button onclick="uiState.learnedCategoryFilter='${escapeJsAttr(cat)}'; uiState.learnedCardIndex=0; renderLearnedVaultModule();" class="px-3.5 py-2 rounded-2xl text-xs font-bold border transition-all ${
+                    uiState.learnedCategoryFilter === cat
+                        ? 'bg-sky-500 text-white border-sky-500'
+                        : 'bg-white/90 dark:bg-slate-900 border-sky-200/70 dark:border-slate-700 hover:border-sky-400'
+                }">
+                    ${cat} (${cnt})
+                </button>
+            `).join('');
+
+            const query = (uiState.learnedSearch || '').toLowerCase().trim();
+            const filtered = learnedAll.filter(w => {
+                const matchCat = uiState.learnedCategoryFilter === 'Tất cả' || w.category === uiState.learnedCategoryFilter;
+                const matchQuery = !query || w.word.toLowerCase().includes(query) || w.meaningVi.toLowerCase().includes(query);
+                return matchCat && matchQuery;
+            });
+
+            let mainBodyHtml = '';
+            if (filtered.length === 0) {
+                mainBodyHtml = `
+                    <div class="bg-white/90 dark:bg-slate-900 rounded-2xl border border-pink-200/70 dark:border-slate-800 p-8 text-center text-sm text-slate-500">
+                        Không tìm thấy từ nào khớp với bộ lọc hiện tại.
+                    </div>
+                `;
+            } else if (uiState.learnedViewMode === 'cards') {
+                if (uiState.learnedCardIndex >= filtered.length) uiState.learnedCardIndex = 0;
+                const cw = filtered[uiState.learnedCardIndex];
+                mainBodyHtml = `
+                    <div class="max-w-2xl mx-auto space-y-4">
+                        <div class="text-center text-xs font-extrabold text-sky-600 dark:text-sky-300">Thẻ ôn tập ${uiState.learnedCardIndex + 1} / ${filtered.length}</div>
+                        <div class="perspective-1200 w-full h-[330px] cursor-pointer select-none" onclick="uiState.learnedCardFlipped=!uiState.learnedCardFlipped; renderLearnedVaultModule();">
+                            <div class="flip-card-inner ${uiState.learnedCardFlipped ? 'is-flipped' : ''}">
+                                <div class="flip-card-front bg-white/95 dark:bg-[#1b172b] rounded-3xl border-2 border-sky-200 dark:border-sky-500/30 shadow-lg p-6 sm:p-8 flex flex-col justify-between">
+                                    <div class="flex items-center justify-between">
+                                        <span class="px-3 py-1 rounded-xl text-xs font-bold bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-300">${cw.category}</span>
+                                        <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">🎓 Đã thuộc</span>
+                                    </div>
+                                    <div class="text-center my-auto">
+                                        <span class="inline-block px-3 py-0.5 rounded-full text-xs font-extrabold bg-sky-100 dark:bg-slate-800 text-sky-600 dark:text-sky-300 mb-2">${formatPosBadge(cw.pos)}</span>
+                                        <h3 class="font-display text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">${cw.word}</h3>
+                                        <p class="text-base font-mono text-sky-500 mt-2">${cw.ipa || ''}</p>
+                                        <button type="button" onclick="event.stopPropagation(); speakText('${escapeJsAttr(cleanSpeechWord(cw.word))}', 1.0, this)" class="mt-5 px-5 py-2.5 rounded-2xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold text-sm">🔊 Nghe phát âm</button>
+                                    </div>
+                                    <div class="text-center text-xs text-slate-400">Chạm thẻ để kiểm tra lại trí nhớ</div>
+                                </div>
+                                <div class="flip-card-back bg-gradient-to-br from-[#eff6ff] to-[#fdf2f8] dark:from-[#172033] dark:to-[#1f1a33] rounded-3xl border-2 border-pink-300 dark:border-pink-500/30 shadow-lg p-6 sm:p-8 flex flex-col justify-between">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-display font-bold text-lg">${cw.word}</span>
+                                        <button type="button" onclick="event.stopPropagation(); moveWordBackToNew('${escapeJsAttr(cw.id)}')" class="px-3 py-1.5 rounded-xl bg-pink-100 dark:bg-pink-950 text-pink-600 dark:text-pink-300 text-xs font-bold">↩️ Học lại (Đưa về Từ mới)</button>
+                                    </div>
+                                    <div class="my-auto">
+                                        <p class="font-display text-2xl font-extrabold text-pink-600 dark:text-pink-300">${cw.meaningVi}</p>
+                                        ${cw.example ? `<p class="text-sm italic text-slate-700 dark:text-slate-200 mt-3">"${cw.example}"</p>` : ''}
+                                        ${cw.exampleVi ? `<p class="text-xs text-slate-500 mt-1">${cw.exampleVi}</p>` : ''}
+                                    </div>
+                                    <div class="text-center text-xs text-slate-400">Chạm để lật lại mặt trước</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                            <button onclick="uiState.learnedCardIndex=(uiState.learnedCardIndex-1+${filtered.length})%${filtered.length}; uiState.learnedCardFlipped=false; renderLearnedVaultModule();" class="px-5 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-sky-200 dark:border-slate-800 text-sm font-bold">← Trước</button>
+                            <button onclick="uiState.learnedCardIndex=(uiState.learnedCardIndex+1)%${filtered.length}; uiState.learnedCardFlipped=false; renderLearnedVaultModule();" class="px-5 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-sky-200 dark:border-slate-800 text-sm font-bold">Tiếp →</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                mainBodyHtml = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${filtered.map(w => `
+                            <div class="bg-white/95 dark:bg-[#191627] rounded-2xl border border-sky-200/80 dark:border-slate-800 p-5 shadow-sm flex flex-col justify-between gap-3 hover:border-pink-300 transition-all">
+                                <div>
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div>
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-300">${w.category}</span>
+                                                <span class="px-2 py-0.5 rounded-lg text-[11px] font-extrabold bg-pink-50 dark:bg-pink-950/70 text-pink-600 dark:text-pink-300">${formatPosBadge(w.pos)}</span>
+                                            </div>
+                                            <h4 class="font-display font-extrabold text-xl text-slate-900 dark:text-white mt-1.5">${w.word}</h4>
+                                            <p class="text-xs font-mono text-slate-400">${w.ipa || ''}</p>
+                                        </div>
+                                        <button onclick="speakText('${escapeJsAttr(cleanSpeechWord(w.word))}', 1.0, this)" class="p-2.5 rounded-xl bg-gradient-to-br from-pink-100 to-sky-100 dark:from-pink-950 dark:to-sky-950 text-pink-600 dark:text-sky-300 shrink-0" title="Nghe phát âm">🔊</button>
+                                    </div>
+                                    <p class="text-sm font-bold text-pink-600 dark:text-pink-300 mt-2.5">${w.meaningVi}</p>
+                                    ${w.example ? `<p class="text-xs text-slate-600 dark:text-slate-300 italic mt-1.5">"${w.example}"</p>` : ''}
+                                    ${w.exampleVi ? `<p class="text-[11px] text-slate-400 mt-0.5">${w.exampleVi}</p>` : ''}
+                                </div>
+                                <div class="pt-3 border-t border-pink-100/70 dark:border-slate-800 flex items-center justify-between">
+                                    <span class="text-[11px] font-bold text-sky-500">✓ Đã lưu trong Kho</span>
+                                    <button onclick="moveWordBackToNew('${escapeJsAttr(w.id)}')" class="px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-300 text-xs font-bold transition-colors">
+                                        ↩️ Học lại (Đưa về Từ mới)
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="animate-fade-up space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">🎓 Kho Từ Đã Học (${learnedAll.length} từ)</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Toàn bộ từ bạn đã thuộc được lưu riêng tại đây để ôn tập bất kỳ lúc nào.</p>
+                        </div>
+                        <button onclick="startGameArena('learned_vault', 'mixed'); switchModule('game_arena');" class="self-start sm:self-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white text-xs sm:text-sm font-extrabold shadow-lg shadow-pink-400/25">
+                            🎮 Ôn tập Kho đã học bằng Game (${learnedAll.length} từ)
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="uiState.learnedCategoryFilter='Tất cả'; uiState.learnedCardIndex=0; renderLearnedVaultModule();" class="px-3.5 py-2 rounded-2xl text-xs font-bold border ${uiState.learnedCategoryFilter === 'Tất cả' ? 'bg-pink-500 text-white border-pink-500' : 'bg-white/90 dark:bg-slate-900 border-pink-200/70 dark:border-slate-700'}">
+                            Tất cả (${learnedAll.length})
+                        </button>
+                        ${topicStatsHtml}
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                        <input type="text" value="${(uiState.learnedSearch || '').replace(/"/g, '&quot;')}" oninput="uiState.learnedSearch=this.value; uiState.learnedCardIndex=0; renderLearnedVaultModule();" placeholder="🔍 Tìm kiếm từ tiếng Anh hoặc nghĩa trong Kho đã học..." class="flex-1 px-4 py-2.5 rounded-2xl bg-white/95 dark:bg-slate-900 border border-sky-200/80 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
+                        <div class="inline-flex rounded-2xl bg-white/90 dark:bg-slate-900 p-1 border border-pink-200/70 dark:border-slate-800 self-start">
+                            <button onclick="uiState.learnedViewMode='list'; renderLearnedVaultModule();" class="px-3.5 py-1.5 rounded-xl text-xs font-bold ${uiState.learnedViewMode === 'list' ? 'bg-sky-500 text-white' : 'text-slate-500'}">📋 Danh sách</button>
+                            <button onclick="uiState.learnedViewMode='cards'; renderLearnedVaultModule();" class="px-3.5 py-1.5 rounded-xl text-xs font-bold ${uiState.learnedViewMode === 'cards' ? 'bg-pink-500 text-white' : 'text-slate-500'}">🗂️ Thẻ ôn tập 3D</button>
+                        </div>
+                    </div>
+
+                    ${mainBodyHtml}
+                </div>
+            `;
+        }
+
+        /**
+         * ============================================================================
+         * 7. MODULE C: SMART SCAN & AUTO-ENRICHMENT ("📷 Scan & Nhập từ mới")
+         *    Tự động thêm Nghĩa tiếng Việt, Phiên âm IPA, Loại từ và Câu ví dụ
+         * ============================================================================
+         */
+        const POS_LABELS = {
+            noun: '(n)', n: '(n)',
+            verb: '(v)', v: '(v)',
+            adjective: '(adj)', adj: '(adj)',
+            adverb: '(adv)', adv: '(adv)',
+            preposition: '(prep)', prep: '(prep)',
+            conjunction: '(conj)', conj: '(conj)',
+            'phrasal verb': '(phr.v)', 'phr.v': '(phr.v)',
+            phrase: '(phr)', phr: '(phr)',
+            'n/v': '(n/v)'
+        };
+
+        function formatPosBadge(pos) {
+            if (!pos) return '(vocab)';
+            const clean = pos.trim().toLowerCase();
+            if (POS_LABELS[clean]) return POS_LABELS[clean];
+            return pos.startsWith('(') ? pos : `(${pos})`;
+        }
+
+        // Offline Fallback Lexicon for Instant Enrichment Without Network
+        const OFFLINE_LEXICON = {
+            resilient: { pos: 'adj', ipa: '/rɪˈzɪliənt/', meaningVi: 'Kiên cường, có khả năng phục hồi nhanh', example: 'Coastal ecosystems must remain resilient against extreme weather events.', exampleVi: 'Các hệ sinh thái ven biển phải duy trì khả năng phục hồi trước các hiện tượng thời tiết cực đoan.' },
+            mitigate: { pos: 'v', ipa: '/ˈmɪtɪɡeɪt/', meaningVi: 'Làm giảm nhẹ, dịu bớt', example: 'Governments are introducing policies to mitigate the impact of inflation.', exampleVi: 'Chính phủ đang ban hành các chính sách nhằm giảm nhẹ tác động của lạm phát.' },
+            ubiquitous: { pos: 'adj', ipa: '/juːˈbɪkwɪtəs/', meaningVi: 'Phổ biến khắp nơi', example: 'Smartphones have become ubiquitous tools in modern daily life.', exampleVi: 'Điện thoại thông minh đã trở thành công cụ phổ biến khắp nơi trong đời sống hiện đại.' },
+            inevitable: { pos: 'adj', ipa: '/ɪnˈevɪtəbl/', meaningVi: 'Không thể tránh khỏi', example: 'Technological disruption is an inevitable part of economic progress.', exampleVi: 'Sự đột phá công nghệ là một phần không thể tránh khỏi của tiến bộ kinh tế.' },
+            sustainable: { pos: 'adj', ipa: '/səˈsteɪnəbl/', meaningVi: 'Bền vững', example: 'Cities are investing heavily in sustainable public transport networks.', exampleVi: 'Các thành phố đang đầu tư mạnh vào mạng lưới giao thông công cộng bền vững.' },
+            proliferate: { pos: 'v', ipa: '/prəˈlɪfəreɪt/', meaningVi: 'Sinh sôi, phát triển nhanh chóng', example: 'Online learning platforms continue to proliferate across the globe.', exampleVi: 'Các nền tảng học trực tuyến tiếp tục phát triển nhanh chóng trên toàn cầu.' },
+            scrutinize: { pos: 'v', ipa: '/ˈskruːtənaɪz/', meaningVi: 'Xem xét kỹ lưỡng, soi xét', example: 'Auditors carefully scrutinize financial statements for any irregularities.', exampleVi: 'Kiểm toán viên xem xét kỹ lưỡng báo cáo tài chính để tìm bất kỳ điểm bất thường nào.' },
+            catalyst: { pos: 'n', ipa: '/ˈkætəlɪst/', meaningVi: 'Chất xúc tác, động lực thúc đẩy', example: 'The pandemic acted as a catalyst for rapid digital transformation.', exampleVi: 'Đại dịch đóng vai trò như chất xúc tác cho quá trình chuyển đổi số nhanh chóng.' },
+            ambiguous: { pos: 'adj', ipa: '/æmˈbɪɡjuəs/', meaningVi: 'Mơ hồ, đa nghĩa', example: 'Contract terms should never be written in ambiguous language.', exampleVi: 'Các điều khoản hợp đồng không bao giờ nên được viết bằng ngôn ngữ mơ hồ.' },
+            comprehensive: { pos: 'adj', ipa: '/ˌkɒmprɪˈhensɪv/', meaningVi: 'Toàn diện, bao quát', example: 'The report offers a comprehensive analysis of global energy trends.', exampleVi: 'Báo cáo cung cấp một phân tích toàn diện về xu hướng năng lượng toàn cầu.' }
+        };
+
+        function inferMorphologyFallback(word) {
+            const w = word.toLowerCase().trim();
+            if (OFFLINE_LEXICON[w]) return OFFLINE_LEXICON[w];
+
+            let pos = 'n';
+            if (w.includes(' ')) {
+                pos = /^(take|switch|creep|carry|bring|look|set|put|turn|work|give|make)\b/.test(w) ? 'phr.v' : 'phr';
+            } else if (/(tion|sion|ment|ness|ity|ance|ence|ship|ism|ist)$/.test(w)) {
+                pos = 'n';
+            } else if (/(able|ible|al|ful|ic|ive|less|ous|ent|ant|ary)$/.test(w)) {
+                pos = 'adj';
+            } else if (/ly$/.test(w) && w.length > 4) {
+                pos = 'adv';
+            } else if (/(ize|ise|ate|ify|en)$/.test(w)) {
+                pos = 'v';
+            }
+
+            const approxIpa = `/${w.replace(/ph/g, 'f').replace(/sh/g, 'ʃ').replace(/ch/g, 'tʃ').replace(/th/g, 'θ')}/`;
+            const example = pos === 'v'
+                ? `Experts often ${w} key factors before making strategic decisions.`
+                : pos === 'adj'
+                    ? `This approach is considered ${w} in modern academic research.`
+                    : pos === 'adv'
+                        ? `The system operates ${w} under demanding conditions.`
+                        : `Understanding "${word}" is essential for academic English mastery.`;
+
+            return {
+                pos,
+                ipa: approxIpa,
+                meaningVi: `Nghĩa của "${word}" (có thể chỉnh sửa)`,
+                example,
+                exampleVi: ''
+            };
+        }
+
+        async function enrichSingleWord(rawWord, providedMeaning = '') {
+            const word = rawWord.trim();
+            const fallback = inferMorphologyFallback(word);
+            let pos = fallback.pos;
+            let ipa = fallback.ipa;
+            let meaningVi = providedMeaning.trim();
+            let example = fallback.example;
+            let exampleVi = fallback.exampleVi || '';
+
+            const lookupHeadword = cleanSpeechWord(word).split(' ')[0].toLowerCase();
+
+            // 1. Fetch IPA, Part of Speech & Real Example from Free Dictionary API
+            try {
+                const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(lookupHeadword)}`);
+                if (dictRes.ok) {
+                    const data = await dictRes.json();
+                    const entry = data[0];
+                    if (entry) {
+                        const foundIpa = entry.phonetic || (entry.phonetics || []).find(p => p.text)?.text;
+                        if (foundIpa) ipa = foundIpa;
+
+                        const firstMeaning = (entry.meanings || [])[0];
+                        if (firstMeaning) {
+                            if (!word.includes(' ') && firstMeaning.partOfSpeech) {
+                                pos = firstMeaning.partOfSpeech;
+                            }
+                            const defWithEx = (firstMeaning.definitions || []).find(d => d.example);
+                            if (defWithEx && defWithEx.example) {
+                                example = defWithEx.example;
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                // Fallback automatically used when offline
+            }
+
+            // 2. Translate Word to Vietnamese if not already supplied
+            if (!meaningVi) {
+                try {
+                    const trRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanSpeechWord(word))}&langpair=en|vi`);
+                    if (trRes.ok) {
+                        const trData = await trRes.json();
+                        const translated = trData?.responseData?.translatedText;
+                        if (translated && translated.toLowerCase() !== cleanSpeechWord(word).toLowerCase()) {
+                            meaningVi = translated.charAt(0).toUpperCase() + translated.slice(1);
+                        }
+                    }
+                } catch (e) {
+                    // Keep fallback
+                }
+            }
+
+            if (!meaningVi) meaningVi = fallback.meaningVi;
+
+            // 3. Translate Example Sentence to Vietnamese
+            if (example && !exampleVi) {
+                try {
+                    const exRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(example)}&langpair=en|vi`);
+                    if (exRes.ok) {
+                        const exData = await exRes.json();
+                        const exVi = exData?.responseData?.translatedText;
+                        if (exVi && exVi.toLowerCase() !== example.toLowerCase()) {
+                            exampleVi = exVi;
+                        }
+                    }
+                } catch (e) {
+                    // Optional example translation
+                }
+            }
+
+            return {
+                tempId: 'tmp-' + Math.random().toString(36).slice(2, 9),
+                word,
+                pos,
+                ipa,
+                meaningVi,
+                example,
+                exampleVi
+            };
+        }
+
+        const STOP_WORDS = new Set([
+            'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'any', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she', 'too', 'use', 'with', 'that', 'this', 'from', 'they', 'will', 'have', 'more', 'when', 'your', 'what', 'said', 'each', 'which', 'their', 'time', 'there', 'about', 'many', 'then', 'them', 'these', 'some', 'would', 'make', 'like', 'into', 'look', 'more', 'write', 'number', 'people', 'could', 'other', 'than', 'first', 'water', 'been', 'call', 'find', 'long', 'down', 'come', 'made', 'part', 'over', 'such', 'take', 'only', 'little', 'work', 'know', 'place', 'year', 'live', 'back', 'give', 'most', 'very', 'after', 'thing', 'just', 'name', 'good', 'sentence', 'think', 'great', 'where', 'help', 'through', 'much', 'before', 'line', 'right', 'mean', 'same', 'tell', 'follow', 'came', 'want', 'show', 'also', 'around', 'form', 'three', 'small', 'set', 'end', 'does', 'another', 'well', 'large', 'must', 'big', 'even', 'because', 'turn', 'here', 'why', 'ask', 'went', 'men', 'read', 'need', 'land', 'different', 'home', 'move', 'try', 'kind', 'hand', 'picture', 'again', 'change', 'off', 'play', 'spell', 'air', 'away', 'animal', 'house', 'point', 'page', 'letter', 'mother', 'answer', 'found', 'study', 'still', 'learn', 'should', 'world'
+        ]);
+
+        function parseRawTextToCandidates(rawText) {
+            const lines = (rawText || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            const candidates = [];
+            const seen = new Set();
+
+            for (const line of lines) {
+                // Pattern 1: "word - meaning" or "word : meaning" or "word | meaning" or tab-separated
+                const pairMatch = line.match(/^([a-zA-Z][a-zA-Z\s'-]{1,42}?)\s*(?:[-–—:|]|\t)\s*(.+)$/);
+                if (pairMatch) {
+                    const w = pairMatch[1].trim();
+                    const m = pairMatch[2].trim();
+                    const key = w.toLowerCase();
+                    if (!seen.has(key) && w.split(/\s+/).length <= 5) {
+                        seen.add(key);
+                        candidates.push({ word: w, meaning: m });
+                        continue;
+                    }
+                }
+
+                // Pattern 2: Comma/semicolon separated list of English words on a line
+                if (!/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(line)) {
+                    const chunks = line.split(/[,;]+/).map(c => c.replace(/^[\d.)\-•*\s]+/, '').trim()).filter(Boolean);
+                    if (chunks.length > 1 && chunks.every(c => /^[a-zA-Z][a-zA-Z\s'-]{1,35}$/.test(c))) {
+                        for (const c of chunks) {
+                            const key = c.toLowerCase();
+                            if (!seen.has(key) && !STOP_WORDS.has(key)) {
+                                seen.add(key);
+                                candidates.push({ word: c, meaning: '' });
+                            }
+                        }
+                        continue;
+                    }
+
+                    // Pattern 3: Single English word/phrase per line
+                    const singleClean = line.replace(/^[\d.)\-•*\s]+/, '').replace(/\s*\/[^/]+\/\s*/g, '').trim();
+                    if (/^[a-zA-Z][a-zA-Z\s'-]{1,38}$/.test(singleClean) && singleClean.split(/\s+/).length <= 4) {
+                        const key = singleClean.toLowerCase();
+                        if (!seen.has(key) && !STOP_WORDS.has(key)) {
+                            seen.add(key);
+                            candidates.push({ word: singleClean, meaning: '' });
+                        }
+                        continue;
+                    }
+
+                    // Pattern 4: Paragraph / OCR block -> extract academic English words (>= 4 chars)
+                    const tokens = line.match(/[a-zA-Z]{4,24}(?:-[a-zA-Z]{2,15})?/g) || [];
+                    for (const tok of tokens) {
+                        const key = tok.toLowerCase();
+                        if (!seen.has(key) && !STOP_WORDS.has(key)) {
+                            seen.add(key);
+                            candidates.push({ word: tok, meaning: '' });
+                        }
+                    }
+                }
+            }
+            return candidates.slice(0, 60);
+        }
+
+        async function processAndEnrichRawText(rawText, sourceLabel = 'Scan') {
+            const candidates = parseRawTextToCandidates(rawText);
+            if (candidates.length === 0) {
+                uiState.importStatusText = '⚠️ Không tìm thấy từ tiếng Anh hợp lệ. Hãy thử ảnh rõ nét hơn hoặc nhập trực tiếp.';
+                renderImportModule();
+                return;
+            }
+
+            uiState.isEnriching = true;
+            uiState.importProgress = 5;
+            uiState.importStatusText = `✨ Đã quét được ${candidates.length} từ từ ${sourceLabel}. Đang tự động thêm nghĩa, IPA, loại từ & câu ví dụ...`;
+            renderImportModule();
+
+            const enriched = [];
+            for (let i = 0; i < candidates.length; i++) {
+                const item = await enrichSingleWord(candidates[i].word, candidates[i].meaning);
+                enriched.push(item);
+                uiState.importProgress = Math.round(((i + 1) / candidates.length) * 100);
+                uiState.importStatusText = `✨ Đang hoàn thiện từ ${i + 1}/${candidates.length}: "${item.word}"...`;
+                if (i % 2 === 0 || i === candidates.length - 1) {
+                    uiState.previewImportedWords = [...enriched];
+                    renderImportModule();
+                }
+            }
+
+            uiState.isEnriching = false;
+            uiState.importStatusText = `✅ Hoàn tất! Đã tự động tạo đầy đủ nghĩa, phát âm IPA, loại từ & ví dụ cho ${enriched.length} từ.`;
+            playGameSound('correct');
+            renderImportModule();
+        }
+
+        async function handleImageOcrUpload(file) {
+            if (!file) return;
+            uiState.isEnriching = true;
+            uiState.importProgress = 10;
+            uiState.importStatusText = '📷 Đang quét chữ tiếng Anh từ ảnh (OCR)...';
+            renderImportModule();
+
+            try {
+                if (typeof Tesseract === 'undefined') throw new Error('OCR library unavailable');
+                const result = await Tesseract.recognize(file, 'eng', {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            uiState.importProgress = Math.max(15, Math.round((m.progress || 0) * 60));
+                            uiState.importStatusText = `📷 Đang nhận diện chữ trong ảnh: ${Math.round((m.progress || 0) * 100)}%...`;
+                            const bar = document.getElementById('import-progress-bar');
+                            const lbl = document.getElementById('import-status-label');
+                            if (bar) bar.style.width = `${uiState.importProgress}%`;
+                            if (lbl) lbl.textContent = uiState.importStatusText;
+                        }
+                    }
+                });
+                const text = result?.data?.text || '';
+                await processAndEnrichRawText(text, 'Ảnh chụp');
+            } catch (err) {
+                uiState.isEnriching = false;
+                uiState.importStatusText = '❌ Không thể đọc ảnh này. Hãy chọn ảnh rõ chữ hơn hoặc dùng tab Dán từ.';
+                renderImportModule();
+            }
+        }
+
+        async function handleDocumentUpload(file) {
+            if (!file) return;
+            const ext = file.name.split('.').pop().toLowerCase();
+            uiState.isEnriching = true;
+            uiState.importProgress = 15;
+            uiState.importStatusText = `📄 Đang đọc tệp ${file.name}...`;
+            renderImportModule();
+
+            try {
+                let extractedText = '';
+                const arrayBuffer = await file.arrayBuffer();
+
+                if (ext === 'docx') {
+                    if (typeof mammoth === 'undefined') throw new Error('Mammoth not loaded');
+                    const res = await mammoth.extractRawText({ arrayBuffer });
+                    extractedText = res.value || '';
+                } else if (ext === 'pdf') {
+                    if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    for (let p = 1; p <= pdf.numPages; p++) {
+                        const page = await pdf.getPage(p);
+                        const content = await page.getTextContent();
+                        extractedText += content.items.map(it => it.str).join(' ') + '\n';
+                    }
+                } else {
+                    extractedText = await file.text();
+                }
+
+                await processAndEnrichRawText(extractedText, file.name);
+            } catch (err) {
+                uiState.isEnriching = false;
+                uiState.importStatusText = '❌ Lỗi khi đọc tệp Word/PDF. Vui lòng thử lại hoặc dán nội dung trực tiếp.';
+                renderImportModule();
+            }
+        }
+
+        async function handleManualSingleAutoFill() {
+            const wordInput = document.getElementById('manual-word-input');
+            const word = (wordInput?.value || '').trim();
+            if (!word) {
+                showToast('Vui lòng nhập từ tiếng Anh trước!', 'error');
+                return;
+            }
+            showToast(`✨ Đang tự tìm nghĩa, IPA & ví dụ cho "${word}"...`, 'info');
+            const item = await enrichSingleWord(word, document.getElementById('manual-meaning-input')?.value || '');
+            if (document.getElementById('manual-pos-input')) document.getElementById('manual-pos-input').value = item.pos;
+            if (document.getElementById('manual-ipa-input')) document.getElementById('manual-ipa-input').value = item.ipa;
+            if (document.getElementById('manual-meaning-input')) document.getElementById('manual-meaning-input').value = item.meaningVi;
+            if (document.getElementById('manual-example-input')) document.getElementById('manual-example-input').value = item.example;
+            if (document.getElementById('manual-example-vi-input')) document.getElementById('manual-example-vi-input').value = item.exampleVi;
+            showToast('✅ Đã tự điền đầy đủ thông tin từ!', 'success');
+        }
+
+        function addManualWordToPreview(e) {
+            e.preventDefault();
+            const word = document.getElementById('manual-word-input').value.trim();
+            const meaningVi = document.getElementById('manual-meaning-input').value.trim();
+            if (!word || !meaningVi) return;
+
+            uiState.previewImportedWords.unshift({
+                tempId: 'tmp-' + Math.random().toString(36).slice(2, 9),
+                word,
+                pos: document.getElementById('manual-pos-input').value.trim() || 'n',
+                ipa: document.getElementById('manual-ipa-input').value.trim() || '',
+                meaningVi,
+                example: document.getElementById('manual-example-input').value.trim(),
+                exampleVi: document.getElementById('manual-example-vi-input').value.trim()
+            });
+            e.target.reset();
+            showToast(`➕ Đã thêm "${word}" vào bảng xem trước!`, 'success');
+            renderImportModule();
+        }
+
+        function updatePreviewField(index, field, value) {
+            if (uiState.previewImportedWords[index]) {
+                uiState.previewImportedWords[index][field] = value;
+            }
+        }
+
+        function removePreviewRow(index) {
+            uiState.previewImportedWords.splice(index, 1);
+            renderImportModule();
+        }
+
+        function commitPreviewWordsToApp(launchGameImmediately = false) {
+            if (!uiState.previewImportedWords.length) return;
+            const catSelect = document.getElementById('import-category-select')?.value;
+            const customCat = document.getElementById('import-custom-category')?.value.trim();
+            const category = customCat || catSelect || 'Từ vựng mới của tôi';
+
+            const newBatchIds = [];
+            const createdRecords = uiState.previewImportedWords.map((item, idx) => {
+                const id = `custom-${Date.now()}-${idx}`;
+                newBatchIds.push(id);
+                return {
+                    id,
+                    category,
+                    word: item.word.trim(),
+                    pos: item.pos.trim() || 'n',
+                    ipa: item.ipa.trim(),
+                    meaningVi: item.meaningVi.trim(),
+                    example: item.example.trim(),
+                    exampleVi: item.exampleVi.trim()
+                };
+            });
+
+            appState.customWords = [...createdRecords, ...(appState.customWords || [])];
+            appState.latestBatchIds = newBatchIds;
+            uiState.previewImportedWords = [];
+            uiState.importStatusText = '';
+            saveState();
+            syncNewDeckOrder(false);
+            playGameSound('victory');
+
+            if (launchGameImmediately) {
+                showToast(`🎮 Đã lưu ${createdRecords.length} từ! Vào Đấu trường Game ngay!`, 'success');
+                startGameArena('latest_batch', 'mixed');
+                switchModule('game_arena');
+            } else {
+                showToast(`🌱 Đã lưu ${createdRecords.length} từ vào mục Học từ vựng mới!`, 'success');
+                setNewVocabFilter('latest_batch');
+                switchModule('new_vocab');
+            }
+        }
+
+        function renderImportModule() {
+            const container = document.getElementById('app-content');
+            const categories = getCategories();
+
+            const subTabs = [
+                { key: 'scan_image', label: '📷 Scan Ảnh (OCR)' },
+                { key: 'upload_doc', label: '📄 Tải Word / PDF' },
+                { key: 'paste', label: '📋 Dán danh sách từ' },
+                { key: 'manual', label: '✍️ Nhập tay + Auto-điền' }
+            ];
+
+            const subTabsHtml = subTabs.map(t => `
+                <button onclick="uiState.importSubTab='${t.key}'; renderImportModule();" class="px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold border transition-all ${
+                    uiState.importSubTab === t.key
+                        ? 'bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white border-transparent shadow-sm'
+                        : 'bg-white/90 dark:bg-slate-900 border-pink-200/70 dark:border-slate-800 text-slate-600 dark:text-slate-300'
+                }">
+                    ${t.label}
+                </button>
+            `).join('');
+
+            let inputPanelHtml = '';
+            if (uiState.importSubTab === 'scan_image') {
+                inputPanelHtml = `
+                    <label class="block cursor-pointer rounded-3xl border-2 border-dashed border-pink-300 dark:border-pink-500/40 bg-gradient-to-br from-pink-50/70 to-sky-50/70 dark:from-pink-950/20 dark:to-sky-950/20 p-8 text-center hover:border-pink-500 transition-all">
+                        <input type="file" accept="image/*" class="hidden" onchange="handleImageOcrUpload(this.files[0])" />
+                        <div class="text-4xl mb-2">📷✨</div>
+                        <div class="font-display font-extrabold text-lg text-slate-900 dark:text-white">Chạm để chọn hoặc chụp ảnh danh sách từ vựng</div>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                            Hỗ trợ PNG, JPG, WEBP. Linbun sẽ tự quét chữ tiếng Anh và tự động thêm <strong>Nghĩa tiếng Việt, Phiên âm IPA, Loại từ & Câu ví dụ</strong>!
+                        </p>
+                    </label>
+                `;
+            } else if (uiState.importSubTab === 'upload_doc') {
+                inputPanelHtml = `
+                    <label class="block cursor-pointer rounded-3xl border-2 border-dashed border-sky-300 dark:border-sky-500/40 bg-gradient-to-br from-sky-50/70 to-pink-50/70 dark:from-sky-950/20 dark:to-pink-950/20 p-8 text-center hover:border-sky-500 transition-all">
+                        <input type="file" accept=".docx,.pdf,.txt" class="hidden" onchange="handleDocumentUpload(this.files[0])" />
+                        <div class="text-4xl mb-2">📄✨</div>
+                        <div class="font-display font-extrabold text-lg text-slate-900 dark:text-white">Tải lên tệp Word (.docx) hoặc PDF (.pdf)</div>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                            Chỉ cần tệp chứa các từ tiếng Anh, Linbun tự trích xuất và bổ sung đầy đủ nghĩa, phiên âm IPA, loại từ & câu ví dụ.
+                        </p>
+                    </label>
+                `;
+            } else if (uiState.importSubTab === 'paste') {
+                inputPanelHtml = `
+                    <div class="bg-white/95 dark:bg-[#191627] rounded-3xl border border-pink-200/80 dark:border-slate-800 p-5 sm:p-6 space-y-3">
+                        <label class="block text-sm font-bold text-slate-800 dark:text-slate-200">Dán các từ tiếng Anh mới (mỗi từ 1 dòng, cách nhau bởi dấu phẩy, hoặc cả đoạn văn):</label>
+                        <textarea id="paste-vocab-textarea" rows="5" placeholder="Ví dụ:&#10;resilient&#10;mitigate&#10;ubiquitous&#10;sustainable" class="w-full p-4 rounded-2xl bg-pink-50/40 dark:bg-slate-900 border border-pink-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"></textarea>
+                        <div class="flex justify-end">
+                            <button onclick="processAndEnrichRawText(document.getElementById('paste-vocab-textarea').value, 'Danh sách dán')" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white text-xs sm:text-sm font-extrabold shadow-md">
+                                ✨ Quét & Tự thêm nghĩa, IPA, ví dụ
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const ipaChars = ['ə', 'ɜː', 'ɪ', 'iː', 'ʊ', 'uː', 'ɒ', 'ɔː', 'æ', 'ʌ', 'ɑː', 'eɪ', 'aɪ', 'ɔɪ', 'əʊ', 'aʊ', 'θ', 'ð', 'ʃ', 'ʒ', 'tʃ', 'dʒ', 'ŋ'];
+                inputPanelHtml = `
+                    <form onsubmit="addManualWordToPreview(event)" class="bg-white/95 dark:bg-[#191627] rounded-3xl border border-pink-200/80 dark:border-slate-800 p-5 sm:p-6 space-y-4">
+                        <div class="flex flex-col sm:flex-row gap-2.5">
+                            <input id="manual-word-input" type="text" required placeholder="Nhập từ tiếng Anh (VD: resilient)..." class="flex-1 px-4 py-2.5 rounded-2xl bg-pink-50/40 dark:bg-slate-900 border border-pink-200 dark:border-slate-700 text-sm font-bold" />
+                            <button type="button" onclick="handleManualSingleAutoFill()" class="px-4 py-2.5 rounded-2xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-xs sm:text-sm font-extrabold">
+                                ✨ Tự điền nghĩa, IPA & ví dụ
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <input id="manual-pos-input" type="text" placeholder="Loại từ (n, v, adj, adv...)" class="px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm" />
+                            <input id="manual-ipa-input" type="text" placeholder="Phiên âm IPA (/.../)" class="px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-mono" />
+                            <input id="manual-meaning-input" type="text" required placeholder="Nghĩa tiếng Việt *" class="px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm" />
+                        </div>
+                        <div class="flex flex-wrap gap-1">
+                            ${ipaChars.map(ch => `<button type="button" onclick="const el=document.getElementById('manual-ipa-input'); el.value+= '${ch}'; el.focus();" class="px-2 py-1 rounded-lg bg-pink-50 dark:bg-slate-800 text-xs font-mono hover:bg-pink-200">${ch}</button>`).join('')}
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input id="manual-example-input" type="text" placeholder="Câu ví dụ tiếng Anh" class="px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm" />
+                            <input id="manual-example-vi-input" type="text" placeholder="Dịch câu ví dụ tiếng Việt" class="px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm" />
+                        </div>
+                        <button type="submit" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white text-xs sm:text-sm font-extrabold">
+                            ➕ Đưa vào danh sách xem trước
+                        </button>
+                    </form>
+                `;
+            }
+
+            const statusBannerHtml = uiState.importStatusText ? `
+                <div class="p-4 rounded-2xl bg-white/95 dark:bg-slate-900 border border-sky-200 dark:border-sky-800/60 space-y-2">
+                    <div id="import-status-label" class="text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-300">${uiState.importStatusText}</div>
+                    ${uiState.isEnriching ? `
+                        <div class="w-full h-2 bg-pink-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div id="import-progress-bar" class="h-full bg-gradient-to-r from-[#f472b6] to-[#38bdf8] transition-all duration-200" style="width: ${uiState.importProgress}%"></div>
+                        </div>
+                    ` : ''}
+                </div>
+            ` : '';
+
+            const previewHtml = uiState.previewImportedWords.length > 0 ? `
+                <div class="bg-white/95 dark:bg-[#191627] rounded-3xl border-2 border-pink-200 dark:border-pink-500/30 p-5 sm:p-6 shadow-xl space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div>
+                            <h3 class="font-display font-extrabold text-lg text-slate-900 dark:text-white">✨ Bảng Xem Trước (${uiState.previewImportedWords.length} từ đã tự động điền)</h3>
+                            <p class="text-xs text-slate-500">Bạn có thể bấm vào từng ô để chỉnh sửa lại trước khi lưu.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <select id="import-category-select" class="px-3 py-2 rounded-xl bg-pink-50 dark:bg-slate-800 border border-pink-200 dark:border-slate-700 text-xs font-bold">
+                                <option value="Từ vựng mới của tôi">📁 Từ vựng mới của tôi</option>
+                                ${categories.map(c => `<option value="${c}">${c}</option>`).join('')}
+                            </select>
+                            <input id="import-custom-category" type="text" placeholder="Hoặc tên chủ đề mới..." class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                            <thead>
+                                <tr class="border-b border-pink-100 dark:border-slate-800 text-slate-500">
+                                    <th class="py-2 px-2">Từ tiếng Anh</th>
+                                    <th class="py-2 px-2">Loại từ</th>
+                                    <th class="py-2 px-2">Phiên âm IPA</th>
+                                    <th class="py-2 px-2">Nghĩa tiếng Việt</th>
+                                    <th class="py-2 px-2">Câu ví dụ</th>
+                                    <th class="py-2 px-1"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-pink-100/60 dark:divide-slate-800">
+                                ${uiState.previewImportedWords.map((row, idx) => `
+                                    <tr>
+                                        <td class="py-2 px-1.5"><input value="${row.word.replace(/"/g, '&quot;')}" onchange="updatePreviewField(${idx}, 'word', this.value)" class="w-28 sm:w-32 px-2 py-1.5 rounded-lg bg-pink-50/50 dark:bg-slate-900 font-bold" /></td>
+                                        <td class="py-2 px-1.5"><input value="${(row.pos || '').replace(/"/g, '&quot;')}" onchange="updatePreviewField(${idx}, 'pos', this.value)" class="w-16 px-2 py-1.5 rounded-lg bg-sky-50/50 dark:bg-slate-900 font-bold text-pink-600" /></td>
+                                        <td class="py-2 px-1.5"><input value="${(row.ipa || '').replace(/"/g, '&quot;')}" onchange="updatePreviewField(${idx}, 'ipa', this.value)" class="w-28 px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 font-mono text-xs" /></td>
+                                        <td class="py-2 px-1.5"><input value="${row.meaningVi.replace(/"/g, '&quot;')}" onchange="updatePreviewField(${idx}, 'meaningVi', this.value)" class="w-40 sm:w-48 px-2 py-1.5 rounded-lg bg-pink-50/50 dark:bg-slate-900 font-semibold" /></td>
+                                        <td class="py-2 px-1.5"><input value="${(row.example || '').replace(/"/g, '&quot;')}" onchange="updatePreviewField(${idx}, 'example', this.value)" class="w-48 sm:w-60 px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 text-xs italic" /></td>
+                                        <td class="py-2 px-1"><button onclick="removePreviewRow(${idx})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg" title="Xóa">✕</button></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex flex-wrap justify-end gap-3 pt-2">
+                        <button onclick="commitPreviewWordsToApp(false)" class="px-5 py-3 rounded-2xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-xs sm:text-sm font-extrabold">
+                            🌱 Lưu ${uiState.previewImportedWords.length} từ vào Từ mới
+                        </button>
+                        <button onclick="commitPreviewWordsToApp(true)" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white text-xs sm:text-sm font-extrabold shadow-lg shadow-pink-400/25">
+                            🎮 Lưu & Chơi Game đủ ${uiState.previewImportedWords.length} từ ngay!
+                        </button>
+                    </div>
+                </div>
+            ` : '';
+
+            container.innerHTML = `
+                <div class="animate-fade-up space-y-5">
+                    <div>
+                        <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">📷 Scan & Nhập Từ Vựng Mới</h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Chỉ cần quét ảnh, tải Word/PDF hoặc dán từ — Linbun tự động thêm nghĩa, IPA, loại từ & câu ví dụ!</p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">${subTabsHtml}</div>
+                    ${inputPanelHtml}
+                    ${statusBannerHtml}
+                    ${previewHtml}
+                </div>
+            `;
+        }
+
+        /**
+         * ============================================================================
+         * 8. MODULE D: "🎮 ĐẤU TRƯỜNG GAME LINBUN"
+         *    - Chơi đầy đủ 100% số từ của bộ đã chọn
+         *    - Trả lời đúng tự động chuyển sang câu tiếp theo (Auto-Next)
+         *    - Hỗ trợ cả Trắc nghiệm & Đưa nghĩa tiếng Việt viết lại sang tiếng Anh
+         * ============================================================================
+         */
+        let gameAutoNextTimer = null;
+
+        function getGameSourceWords(source) {
+            if (source === 'latest_batch') {
+                const batchSet = new Set(appState.latestBatchIds || []);
+                return getAllWords().filter(w => batchSet.has(w.id));
+            }
+            if (source === 'all_new') return getNewVocabularyList();
+            if (source === 'learned_vault') return getLearnedVocabularyList();
+            return getAllWords().filter(w => w.category === source);
+        }
+
+        function startGameArena(source = 'all_new', mode = 'mixed') {
+            if (gameAutoNextTimer) clearTimeout(gameAutoNextTimer);
+            uiState.gameSource = source;
+            uiState.gameMode = mode;
+
+            let pool = getGameSourceWords(source);
+            if (pool.length === 0) {
+                pool = getAllWords();
+                uiState.gameSource = 'all_new';
+            }
+
+            // Include 100% of words in the selected source!
+            uiState.gameQueue = [...pool].sort(() => Math.random() - 0.5);
+            uiState.gameTotalTarget = uiState.gameQueue.length;
+            uiState.gameConqueredIds = [];
+            uiState.gameCombo = 0;
+            uiState.gameMaxCombo = 0;
+            uiState.gameRoundXp = 0;
+            uiState.gameMistakeCount = 0;
+            uiState.gameFinished = false;
+            uiState.gameTransferredToLearned = false;
+
+            prepareNextGameQuestion();
+        }
+
+        function prepareNextGameQuestion() {
+            if (gameAutoNextTimer) clearTimeout(gameAutoNextTimer);
+
+            if (uiState.gameQueue.length === 0) {
+                uiState.gameFinished = true;
+                uiState.gameCurrentItem = null;
+                playGameSound('victory');
+                launchPastelConfetti(80);
+                if (uiState.activeModule === 'game_arena') renderGameArenaModule();
+                return;
+            }
+
+            const wordObj = uiState.gameQueue[0];
+            let qType = uiState.gameMode;
+            if (qType === 'mixed') {
+                const types = ['speed_mcq', 'vi_to_en_write', 'listen'];
+                qType = types[uiState.gameConqueredIds.length % types.length];
+            }
+
+            const mcqVariants = ['en_to_vi', 'vi_to_en', 'cloze'];
+            const mcqVariant = mcqVariants[Math.floor(Math.random() * mcqVariants.length)];
+
+            // Build 4 distinct choices
+            const allWords = getAllWords();
+            const distractors = allWords
+                .filter(w => w.id !== wordObj.id)
+                .sort(() => Math.random() - 0.5)
+                .slice(0, 3);
+            const choices = [wordObj, ...distractors].sort(() => Math.random() - 0.5);
+
+            uiState.gameCurrentItem = { wordObj, qType, mcqVariant, choices };
+            uiState.gameAnswered = false;
+            uiState.gameIsCorrect = false;
+            uiState.gameSelectedOptId = null;
+            uiState.gameTypedValue = '';
+            uiState.gameHintLetters = 0;
+            uiState.gameShowIpaHint = false;
+
+            if (qType === 'listen') {
+                setTimeout(() => speakText(cleanSpeechWord(wordObj.word), 1.0), 180);
+            }
+
+            if (uiState.activeModule === 'game_arena') {
+                renderGameArenaModule();
+                if (qType === 'vi_to_en_write') {
+                    setTimeout(() => {
+                        const inp = document.getElementById('game-write-input');
+                        if (inp) inp.focus();
+                    }, 50);
+                }
+            }
+        }
+
+        function submitGameChoice(chosenId) {
+            if (uiState.gameAnswered || !uiState.gameCurrentItem) return;
+            uiState.gameSelectedOptId = chosenId;
+            if (chosenId === uiState.gameCurrentItem.wordObj.id) {
+                handleGameCorrectAnswer();
+            } else {
+                handleGameWrongAnswer(chosenId);
+            }
+        }
+
+        function normalizeEnglishAnswer(str) {
+            return (str || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        }
+
+        function checkTypedGameAnswer(val, isExplicitSubmit = false) {
+            if (uiState.gameAnswered || !uiState.gameCurrentItem) return;
+            uiState.gameTypedValue = val;
+            const target = normalizeEnglishAnswer(uiState.gameCurrentItem.wordObj.word);
+            const typed = normalizeEnglishAnswer(val);
+
+            if (typed === target) {
+                handleGameCorrectAnswer();
+            } else if (isExplicitSubmit) {
+                handleGameWrongAnswer(null);
+            }
+        }
+
+        function revealTypeHint(type) {
+            if (!uiState.gameCurrentItem) return;
+            if (type === 'ipa') {
+                uiState.gameShowIpaHint = true;
+            } else if (type === 'letter') {
+                const len = uiState.gameCurrentItem.wordObj.word.length;
+                uiState.gameHintLetters = Math.min(len, uiState.gameHintLetters + 1);
+            }
+            renderGameArenaModule();
+            const inp = document.getElementById('game-write-input');
+            if (inp) inp.focus();
+        }
+
+        function handleGameCorrectAnswer() {
+            const current = uiState.gameQueue.shift();
+            if (current && !uiState.gameConqueredIds.includes(current.id)) {
+                uiState.gameConqueredIds.push(current.id);
+            }
+
+            uiState.gameAnswered = true;
+            uiState.gameIsCorrect = true;
+            uiState.gameCombo += 1;
+            if (uiState.gameCombo > uiState.gameMaxCombo) uiState.gameMaxCombo = uiState.gameCombo;
+
+            const earned = 10 + Math.min(20, uiState.gameCombo * 2);
+            uiState.gameRoundXp += earned;
+            appState.xp = (appState.xp || 0) + earned;
+            saveState();
+
+            playGameSound('correct');
+            launchPastelConfetti(28);
+            renderGameArenaModule();
+
+            // Automatically move to the next question after 0.95s!
+            gameAutoNextTimer = setTimeout(() => {
+                prepareNextGameQuestion();
+            }, 950);
+        }
+
+        function handleGameWrongAnswer(chosenId) {
+            uiState.gameAnswered = true;
+            uiState.gameIsCorrect = false;
+            uiState.gameSelectedOptId = chosenId;
+            uiState.gameCombo = 0;
+            uiState.gameMistakeCount += 1;
+
+            // Re-queue the missed word near the end so the player conquers 100% of the deck
+            const failed = uiState.gameQueue.shift();
+            if (failed) {
+                const insertPos = Math.min(uiState.gameQueue.length, 2);
+                uiState.gameQueue.splice(insertPos, 0, failed);
+            }
+
+            playGameSound('wrong');
+            renderGameArenaModule();
+        }
+
+        function transferGameConqueredToLearned() {
+            let added = 0;
+            uiState.gameConqueredIds.forEach(id => {
+                if (!appState.learnedIds.includes(id)) {
+                    appState.learnedIds.push(id);
+                    added++;
+                }
+            });
+            uiState.gameTransferredToLearned = true;
+            saveState();
+            syncNewDeckOrder(false);
+            showToast(`🎓 Đã chuyển ${added} từ vừa chinh phục vào Kho từ đã học!`, 'success');
+            renderGameArenaModule();
+        }
+
+        function renderGameArenaModule() {
+            const container = document.getElementById('app-content');
+            const batchCount = getGameSourceWords('latest_batch').length;
+            const newCount = getNewVocabularyList().length;
+            const learnedCount = getLearnedVocabularyList().length;
+            const categories = getCategories();
+
+            const sourceOptionsHtml = [
+                ...(batchCount > 0 ? [`<option value="latest_batch" ${uiState.gameSource === 'latest_batch' ? 'selected' : ''}>🆕 Đợt vừa scan/nhập (${batchCount} từ)</option>`] : []),
+                `<option value="all_new" ${uiState.gameSource === 'all_new' ? 'selected' : ''}>🌱 Tất cả từ mới (${newCount} từ)</option>`,
+                ...(learnedCount > 0 ? [`<option value="learned_vault" ${uiState.gameSource === 'learned_vault' ? 'selected' : ''}>🎓 Kho từ đã học (${learnedCount} từ)</option>`] : []),
+                ...categories.map(cat => {
+                    const cnt = getGameSourceWords(cat).length;
+                    return `<option value="${cat.replace(/"/g, '&quot;')}" ${uiState.gameSource === cat ? 'selected' : ''}>📁 ${cat} (${cnt} từ)</option>`;
+                })
+            ].join('');
+
+            const modes = [
+                { key: 'mixed', label: '🔥 Đấu trường Tổng hợp' },
+                { key: 'speed_mcq', label: '🎯 Trắc nghiệm Siêu tốc' },
+                { key: 'vi_to_en_write', label: '✍️ Nghĩa Việt → Viết Tiếng Anh' },
+                { key: 'listen', label: '🎧 Luyện nghe Phản xạ' }
+            ];
+
+            const modePillsHtml = modes.map(m => `
+                <button onclick="startGameArena(uiState.gameSource, '${m.key}')" class="px-3.5 py-2 rounded-2xl text-xs font-bold border whitespace-nowrap transition-all ${
+                    uiState.gameMode === m.key
+                        ? 'bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white border-transparent shadow-sm'
+                        : 'bg-white/90 dark:bg-slate-900 border-pink-200/70 dark:border-slate-800 text-slate-600 dark:text-slate-300'
+                }">
+                    ${m.label}
+                </button>
+            `).join('');
+
+            // Victory Summary Screen
+            if (uiState.gameFinished) {
+                const unlearnedConquered = uiState.gameConqueredIds.filter(id => !(appState.learnedIds || []).includes(id));
+                container.innerHTML = `
+                    <div class="animate-fade-up space-y-5">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">🎮 Đấu Trường Game Linbun</h2>
+                            <select onchange="startGameArena(this.value, uiState.gameMode)" class="px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border-2 border-pink-300 text-xs sm:text-sm font-bold">
+                                ${sourceOptionsHtml}
+                            </select>
+                        </div>
+
+                        <div class="max-w-2xl mx-auto bg-white/95 dark:bg-[#191627] rounded-3xl border-2 border-pink-300 dark:border-pink-500/30 p-8 text-center shadow-2xl space-y-5">
+                            <div class="text-6xl">🏆🐰✨</div>
+                            <h3 class="font-display text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-pink-500 to-sky-500 bg-clip-text text-transparent">
+                                Chinh Phục Trọn Vẹn ${uiState.gameTotalTarget} / ${uiState.gameTotalTarget} Từ!
+                            </h3>
+                            <div class="grid grid-cols-3 gap-3 max-w-md mx-auto">
+                                <div class="p-3 rounded-2xl bg-pink-50 dark:bg-pink-950/40">
+                                    <div class="text-[11px] font-bold text-pink-500">Điểm XP</div>
+                                    <div class="font-display text-xl font-extrabold">+${uiState.gameRoundXp}</div>
+                                </div>
+                                <div class="p-3 rounded-2xl bg-sky-50 dark:bg-sky-950/40">
+                                    <div class="text-[11px] font-bold text-sky-500">Max Combo</div>
+                                    <div class="font-display text-xl font-extrabold">🔥 x${uiState.gameMaxCombo}</div>
+                                </div>
+                                <div class="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40">
+                                    <div class="text-[11px] font-bold text-rose-500">Lượt ôn lại</div>
+                                    <div class="font-display text-xl font-extrabold">${uiState.gameMistakeCount}</div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap justify-center gap-3 pt-2">
+                                ${unlearnedConquered.length > 0 && !uiState.gameTransferredToLearned ? `
+                                    <button onclick="transferGameConqueredToLearned()" class="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white text-xs sm:text-sm font-extrabold shadow-md">
+                                        🎓 Chuyển ${unlearnedConquered.length} từ vừa thuộc vào Kho đã học
+                                    </button>
+                                ` : ''}
+                                <button onclick="startGameArena(uiState.gameSource, uiState.gameMode)" class="px-5 py-3 rounded-2xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-xs sm:text-sm font-extrabold">
+                                    🔄 Chơi lại cả bộ (${uiState.gameTotalTarget} từ)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const { wordObj, qType, mcqVariant, choices } = uiState.gameCurrentItem;
+            const currentDisplayStep = Math.min(uiState.gameTotalTarget, uiState.gameConqueredIds.length + 1);
+            const progressPct = uiState.gameTotalTarget > 0 ? Math.round((uiState.gameConqueredIds.length / uiState.gameTotalTarget) * 100) : 0;
+
+            const modeBadges = {
+                speed_mcq: '🎯 Trắc nghiệm Siêu tốc (Phím 1-4)',
+                vi_to_en_write: '✍️ Nghĩa tiếng Việt → Viết lại sang tiếng Anh',
+                listen: '🎧 Luyện nghe Phản xạ'
+            };
+
+            let arenaBodyHtml = '';
+
+            if (qType === 'speed_mcq' || qType === 'listen') {
+                let promptTitle = '';
+                let promptSub = '';
+
+                if (qType === 'listen') {
+                    promptTitle = 'Nghe phát âm và chọn từ tiếng Anh đúng:';
+                    promptSub = `Gợi ý loại từ: ${formatPosBadge(wordObj.pos)}`;
+                } else if (mcqVariant === 'vi_to_en') {
+                    promptTitle = wordObj.meaningVi;
+                    promptSub = `${formatPosBadge(wordObj.pos)} — Chọn từ tiếng Anh tương ứng:`;
+                } else if (mcqVariant === 'cloze' && wordObj.example && wordObj.example.toLowerCase().includes(wordObj.word.toLowerCase())) {
+                    const blanked = wordObj.example.replace(new RegExp(wordObj.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), '________');
+                    promptTitle = `"${blanked}"`;
+                    promptSub = `Điền từ còn thiếu (${wordObj.meaningVi}):`;
+                } else {
+                    promptTitle = wordObj.word;
+                    promptSub = `${formatPosBadge(wordObj.pos)} ${wordObj.ipa || ''} — Chọn nghĩa tiếng Việt đúng:`;
+                }
+
+                const showEnChoices = qType === 'listen' || mcqVariant === 'vi_to_en' || mcqVariant === 'cloze';
+
+                arenaBodyHtml = `
+                    <div class="space-y-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="font-display text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">${promptTitle}</h3>
+                                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">${promptSub}</p>
+                            </div>
+                            <div class="flex gap-1.5 shrink-0">
+                                <button type="button" onclick="speakText('${escapeJsAttr(cleanSpeechWord(wordObj.word))}', 1.0, this)" class="px-3 py-2 rounded-xl bg-pink-100 dark:bg-pink-950 text-pink-600 dark:text-pink-300 text-xs font-bold">🔊 Nghe</button>
+                                ${qType === 'listen' ? `<button type="button" onclick="speakText('${escapeJsAttr(cleanSpeechWord(wordObj.word))}', 0.72, this)" class="px-2.5 py-2 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-300 text-xs font-bold">🐢 Chậm</button>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                            ${choices.map((opt, idx) => {
+                                let btnStyle = 'bg-white dark:bg-slate-900 border-pink-200/80 dark:border-slate-700 hover:border-sky-400 text-slate-800 dark:text-slate-100';
+                                if (uiState.gameAnswered) {
+                                    if (opt.id === wordObj.id) {
+                                        btnStyle = 'bg-emerald-500/15 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-extrabold';
+                                    } else if (opt.id === uiState.gameSelectedOptId) {
+                                        btnStyle = 'bg-rose-500/15 border-rose-500 text-rose-700 dark:text-rose-300';
+                                    } else {
+                                        btnStyle = 'opacity-50 border-slate-200 dark:border-slate-800';
+                                    }
+                                }
+                                return `
+                                    <button type="button" ${uiState.gameAnswered ? 'disabled' : ''} onclick="submitGameChoice('${escapeJsAttr(opt.id)}')" class="p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-3 ${btnStyle}">
+                                        <span class="w-7 h-7 rounded-xl bg-pink-100 dark:bg-slate-800 text-pink-600 dark:text-sky-300 text-xs font-extrabold flex items-center justify-center shrink-0">${idx + 1}</span>
+                                        <span class="text-sm font-bold leading-snug">${showEnChoices ? opt.word : opt.meaningVi}</span>
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Mode: Vietnamese meaning -> Type English word
+                const letterMask = uiState.gameHintLetters > 0
+                    ? wordObj.word.slice(0, uiState.gameHintLetters) + '•'.repeat(Math.max(0, wordObj.word.length - uiState.gameHintLetters))
+                    : '';
+
+                arenaBodyHtml = `
+                    <form onsubmit="event.preventDefault(); checkTypedGameAnswer(document.getElementById('game-write-input').value, true);" class="space-y-4">
+                        <div class="p-5 rounded-2xl bg-gradient-to-br from-pink-50/90 to-sky-50/90 dark:from-pink-950/30 dark:to-sky-950/30 border border-pink-200/70 dark:border-slate-700">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <span class="text-xs font-extrabold text-pink-500 uppercase tracking-wide">Nghĩa tiếng Việt</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-300">${formatPosBadge(wordObj.pos)}</span>
+                            </div>
+                            <div class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">${wordObj.meaningVi}</div>
+                            ${uiState.gameShowIpaHint ? `<div class="text-sm font-mono text-sky-600 dark:text-sky-300 mt-1.5">Phiên âm: ${wordObj.ipa || 'N/A'}</div>` : ''}
+                            ${letterMask ? `<div class="text-sm font-mono font-bold text-pink-600 dark:text-pink-300 mt-1">Gợi ý chữ cái: ${letterMask} (${wordObj.word.length} ký tự)</div>` : ''}
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" onclick="revealTypeHint('letter')" class="px-3 py-1.5 rounded-xl bg-pink-50 dark:bg-slate-800 text-pink-600 dark:text-pink-300 text-xs font-bold">🔤 Mở 1 chữ cái</button>
+                            <button type="button" onclick="revealTypeHint('ipa')" class="px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-slate-800 text-sky-600 dark:text-sky-300 text-xs font-bold">💡 Gợi ý phiên âm IPA</button>
+                            <button type="button" onclick="speakText('${escapeJsAttr(cleanSpeechWord(wordObj.word))}', 0.9, this)" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold">🔊 Nghe gợi ý</button>
+                        </div>
+
+                        <input id="game-write-input" type="text" autocomplete="off" spellcheck="false" ${uiState.gameAnswered ? 'disabled' : ''} value="${(uiState.gameTypedValue || '').replace(/"/g, '&quot;')}" oninput="checkTypedGameAnswer(this.value, false)" placeholder="Gõ lại từ/cụm từ tiếng Anh tương ứng..." class="w-full px-5 py-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-sky-300 dark:border-sky-500/40 font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-400" />
+
+                        ${!uiState.gameAnswered ? `
+                            <div class="flex gap-2.5">
+                                <button type="button" onclick="handleGameWrongAnswer(null)" class="px-4 py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold">Xem đáp án</button>
+                                <button type="submit" class="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white font-bold text-sm shadow-md">Kiểm tra đáp án ✓</button>
+                            </div>
+                        ` : ''}
+                    </form>
+                `;
+            }
+
+            // Feedback Banner: Auto-Next countdown on correct, or Re-queue notice on wrong
+            let feedbackHtml = '';
+            if (uiState.gameAnswered) {
+                if (uiState.gameIsCorrect) {
+                    feedbackHtml = `
+                        <div class="mt-5 p-4 rounded-2xl bg-gradient-to-r from-pink-50 to-sky-50 dark:from-pink-950/60 dark:to-sky-950/60 border border-pink-300 dark:border-sky-500/40 animate-fade-up">
+                            <div class="flex items-center justify-between text-sm font-extrabold text-pink-600 dark:text-sky-300">
+                                <span>🎉 Chính xác! ${uiState.gameCombo >= 2 ? `Combo 🔥 x${uiState.gameCombo}!` : ''} Đang tự động chuyển sang câu tiếp theo...</span>
+                                <span>⚡ Auto-Next</span>
+                            </div>
+                            <div class="w-full h-2 bg-white dark:bg-slate-800 rounded-full overflow-hidden mt-2.5">
+                                <div class="h-full bg-gradient-to-r from-[#f472b6] to-[#38bdf8] animate-countdown"></div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    feedbackHtml = `
+                        <div class="mt-5 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 animate-fade-up space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-display font-extrabold text-rose-600 dark:text-rose-300">❌ Chưa đúng! Đáp án: ${wordObj.word}</span>
+                                <button onclick="speakText('${escapeJsAttr(cleanSpeechWord(wordObj.word))}', 1.0, this)" class="px-3 py-1 rounded-xl bg-white dark:bg-slate-800 text-xs font-bold text-sky-600">🔊 Nghe</button>
+                            </div>
+                            <p class="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200">${wordObj.word} <span class="font-bold text-pink-500">${formatPosBadge(wordObj.pos)}</span> <span class="font-mono text-sky-500">${wordObj.ipa || ''}</span> — ${wordObj.meaningVi}</p>
+                            ${wordObj.example ? `<p class="text-xs italic text-slate-500 dark:text-slate-400">"${wordObj.example}"</p>` : ''}
+                            <div class="pt-2 flex items-center justify-between">
+                                <span class="text-[11px] font-semibold text-rose-500">🔄 Từ này đã được xếp lại vào hàng đợi phía sau.</span>
+                                <button onclick="prepareNextGameQuestion()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#f472b6] to-[#38bdf8] text-white text-xs sm:text-sm font-extrabold shadow-sm">
+                                    Tiếp tục chiến đấu →
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            container.innerHTML = `
+                <div class="animate-fade-up space-y-5">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div>
+                            <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">🎮 Đấu Trường Game Linbun</h2>
+                            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Chơi đầy đủ 100% bộ từ • Đúng tự động qua câu tiếp theo!</p>
+                        </div>
+                        <select onchange="startGameArena(this.value, uiState.gameMode)" class="px-4 py-2.5 rounded-2xl bg-white/95 dark:bg-slate-900 border-2 border-pink-300 dark:border-pink-500/30 text-xs sm:text-sm font-bold text-slate-800 dark:text-white focus:outline-none">
+                            ${sourceOptionsHtml}
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">${modePillsHtml}</div>
+
+                    <!-- Full Deck Progress & Combo HUD -->
+                    <div class="max-w-2xl mx-auto bg-white/90 dark:bg-[#191627] rounded-2xl border border-pink-200/80 dark:border-slate-800 p-3.5 px-5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                        <div class="flex items-center gap-3 flex-1 min-w-[200px]">
+                            <span class="text-xs sm:text-sm font-extrabold text-pink-600 dark:text-pink-300 whitespace-nowrap">
+                                Câu ${currentDisplayStep} / Tổng ${uiState.gameTotalTarget} từ
+                            </span>
+                            <div class="flex-1 h-2.5 bg-pink-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-[#f472b6] to-[#38bdf8] rounded-full transition-all duration-300" style="width: ${progressPct}%"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 rounded-xl text-xs font-extrabold ${uiState.gameCombo >= 2 ? 'bg-gradient-to-r from-pink-500 to-amber-400 text-white animate-pulse' : 'bg-pink-50 dark:bg-slate-800 text-pink-500'}">
+                                🔥 Combo x${uiState.gameCombo}
+                            </span>
+                            <span class="px-3 py-1 rounded-xl text-xs font-extrabold bg-sky-50 dark:bg-slate-800 text-sky-600 dark:text-sky-300">
+                                +${uiState.gameRoundXp} XP
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Main Arena Question Card -->
+                    <div class="max-w-2xl mx-auto bg-white/95 dark:bg-[#191627] rounded-3xl border-2 border-pink-200/80 dark:border-pink-500/25 shadow-xl p-6 sm:p-8 ${uiState.gameAnswered && !uiState.gameIsCorrect ? 'animate-shake' : ''}">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-3 py-1 rounded-xl text-xs font-bold bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-300">${modeBadges[qType]}</span>
+                            <span class="text-xs font-semibold text-slate-400">${wordObj.category}</span>
+                        </div>
+
+                        ${arenaBodyHtml}
+                        ${feedbackHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * ============================================================================
+         * 9. KEYBOARD SHORTCUTS & BOOTSTRAP
+         * ============================================================================
+         */
+        document.addEventListener('keydown', (e) => {
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+            if (uiState.activeModule === 'new_vocab') {
+                if (e.code === 'Space') { e.preventDefault(); flipNewCard(); }
+                else if (e.code === 'ArrowRight') nextNewCard();
+                else if (e.code === 'ArrowLeft') prevNewCard();
+                else if (e.key.toLowerCase() === 'a') speakCurrentNewCard(1.0);
+            } else if (uiState.activeModule === 'game_arena' && uiState.gameCurrentItem && !uiState.gameAnswered) {
+                const { qType, choices } = uiState.gameCurrentItem;
+                if ((qType === 'speed_mcq' || qType === 'listen') && ['1', '2', '3', '4'].includes(e.key)) {
+                    const idx = parseInt(e.key, 10) - 1;
+                    if (choices[idx]) submitGameChoice(choices[idx].id);
+                }
+            }
+        });
+
+        // Initialize Linbun
+        applyTheme();
+        updateAccentButtons();
+        updateGlobalCounters();
+        switchModule('new_vocab');
+    </script>
+</body>
+</html>
