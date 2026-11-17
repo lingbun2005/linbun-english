@@ -24,17 +24,17 @@
                     },
                     colors: {
                         blue: {
-                            50: '#f2f7ff',
-                            100: '#e4efff',
-                            200: '#c9dfff',
-                            300: '#a1c7fd',
-                            400: '#78affb',
-                            500: '#5b9bf8',
-                            600: '#5b9bf8',
-                            700: '#4686e5',
-                            800: '#356ec4',
-                            900: '#275396',
-                            950: '#193563'
+                            50: '#f5f9ff',
+                            100: '#ebf3fe',
+                            200: '#d6e7fd',
+                            300: '#b8d6fc',
+                            400: '#98c3fa',
+                            500: '#84b6f8',
+                            600: '#7ab0f7',
+                            700: '#649ee8',
+                            800: '#4e84cc',
+                            900: '#3965a3',
+                            950: '#233f6b'
                         }
                     }
                 }
@@ -48,7 +48,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
     <style>
-        /* Strict Color System: Solid Pastel Pink Backdrop (#fdebf3), Crisp White Cards (#ffffff), Solid Pastel Blue Accents (#5b9bf8) */
+        /* Strict Color System: Solid Pastel Pink Backdrop (#fdebf3), Crisp White Cards (#ffffff), Soft Sky Pastel Blue Accents (#7ab0f7) */
         body {
             background-color: #fdebf3;
             min-height: 100vh;
@@ -59,13 +59,23 @@
             background-color: #0f172a;
         }
 
-        /* 3D Flashcard Flip */
+        /* Enhanced 3D Flashcard Flip with Lift, Spring & Glossy Shimmer */
         .perspective-1200 {
-            perspective: 1200px;
+            perspective: 1400px;
+        }
+        .flashcard-stage {
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .flashcard-stage:hover {
+            transform: translateY(-3px);
+        }
+        .flashcard-stage.is-flipping {
+            transform: scale(1.03) translateY(-4px);
         }
         .preserve-3d {
             transform-style: preserve-3d;
-            transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: transform 0.68s cubic-bezier(0.34, 1.42, 0.64, 1);
+            will-change: transform;
         }
         .preserve-3d.is-flipped {
             transform: rotateY(180deg);
@@ -73,6 +83,37 @@
         .backface-hidden {
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
+            overflow: hidden;
+            box-shadow: 0 14px 32px -12px rgba(122, 176, 247, 0.28), 0 4px 12px -4px rgba(15, 23, 42, 0.05);
+            transition: box-shadow 0.35s ease, border-color 0.35s ease;
+        }
+        .flashcard-stage:hover .backface-hidden {
+            box-shadow: 0 20px 38px -12px rgba(122, 176, 247, 0.38), 0 6px 16px -4px rgba(15, 23, 42, 0.06);
+        }
+        .card-shine::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -75%;
+            width: 50%;
+            height: 200%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.55) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(24deg);
+            pointer-events: none;
+            opacity: 0;
+        }
+        .flashcard-stage.is-flipping .card-shine::after {
+            animation: cardShimmerSweep 0.68s ease-out forwards;
+        }
+        @keyframes cardShimmerSweep {
+            0% { left: -75%; opacity: 0; }
+            30% { opacity: 0.95; }
+            100% { left: 135%; opacity: 0; }
         }
         .rotate-y-180 {
             transform: rotateY(180deg);
@@ -156,11 +197,11 @@
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: #93c5fd;
+            background: #b8d6fc;
             border-radius: 999px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #2563eb;
+            background: #7ab0f7;
         }
     </style>
 </head>
@@ -488,7 +529,12 @@
             money: 10,
             catFullness: 60,
             catChubbiness: 0,
-            mealsFed: 0
+            mealsFed: 0,
+            ownedItems: [],
+            equippedOutfit: 'none',
+            equippedToy: 'none',
+            equippedScratch: 'none',
+            equippedHouse: 'none'
         };
         /* DEFAULT_VOCABULARY_END */
 
@@ -521,6 +567,7 @@
         let learnedWordIds = new Set(loadStoredJson(STORAGE_KEYS.learned, DEFAULT_LEARNED_IDS));
         let recentBatchIds = loadStoredJson(STORAGE_KEYS.recentBatch, []);
         let petEconomy = Object.assign({}, DEFAULT_PET_ECONOMY, loadStoredJson(STORAGE_KEYS.petEconomy, {}));
+        if (!Array.isArray(petEconomy.ownedItems)) petEconomy.ownedItems = [];
 
         let voiceAccent = localStorage.getItem(STORAGE_KEYS.accent) || 'en-US';
         let isDarkMode = localStorage.getItem(STORAGE_KEYS.theme) === 'dark';
@@ -530,6 +577,26 @@
             { id: 'salmon', icon: '🐟', name: 'Cá hồi nướng', cost: 5, fullnessGain: 30, chubbyGain: 3, desc: 'Món khoái khẩu giúp mèo trắng no lâu và mượt lông.' },
             { id: 'lobster', icon: '🍤', name: 'Tôm hùm hấp', cost: 8, fullnessGain: 50, chubbyGain: 5, desc: 'Bữa tiệc hải sản giúp mèo trắng tròn trịa đáng yêu.' },
             { id: 'cake', icon: '🎂', name: 'Bánh kem cá ngừ VIP', cost: 15, fullnessGain: 100, chubbyGain: 10, desc: 'No căng 100% lập tức & tăng tối đa độ mập ú!' }
+        ];
+
+        const CAT_SHOP_ITEMS = [
+            // Quần áo & Phụ kiện (outfit)
+            { id: 'bow_tie', slot: 'outfit', icon: '🎀', name: 'Nơ cổ xanh pastel', cost: 6, desc: 'Chiếc nơ xinh xắn thắt ngay cổ giúp mèo trắng thêm điệu đà.' },
+            { id: 'hoodie_blue', slot: 'outfit', icon: '🧥', name: 'Áo len xanh dương nhạt', cost: 12, desc: 'Áo hoodie mềm ấm co giãn theo độ mập ú của mèo trắng.' },
+            { id: 'crown_royal', slot: 'outfit', icon: '👑', name: 'Vương miện hoàng gia', cost: 20, desc: 'Vương miện vàng lấp lánh biến mèo trắng thành tiểu hoàng tử.' },
+
+            // Đồ chơi (toy)
+            { id: 'yarn_ball', slot: 'toy', icon: '🧶', name: 'Cuộn len xanh nhạt', cost: 5, desc: 'Cuộn len tròn mềm đặt cạnh chân để mèo vờn chơi cả ngày.' },
+            { id: 'fish_plush', slot: 'toy', icon: '🧸', name: 'Cá bông ôm ngủ', cost: 9, desc: 'Chú cá nhồi bông êm ái luôn nằm cạnh mèo trắng.' },
+            { id: 'wand_feather', slot: 'toy', icon: '🪶', name: 'Cần câu lông vũ', cost: 14, desc: 'Cần câu gắn lông vũ mềm khiến mèo trắng thích thú.' },
+
+            // Bàn cào móng (scratch)
+            { id: 'scratch_post', slot: 'scratch', icon: '🪵', name: 'Trụ cào móng dây thừng', cost: 10, desc: 'Trụ cào móng đứng vững chắc bên cạnh để mèo mài móng.' },
+            { id: 'cat_tree', slot: 'scratch', icon: '🌴', name: 'Tháp cây cào móng 2 tầng', cost: 22, desc: 'Tháp cào móng cao cấp có bệ nghỉ sang xịn cho mèo.' },
+
+            // Nhà ở (house)
+            { id: 'cozy_bed', slot: 'house', icon: '🛏️', name: 'Đệm mây tròn êm ái', cost: 12, desc: 'Chiếc đệm tròn mềm mại màu xanh nhạt lót dưới chỗ mèo ngồi.' },
+            { id: 'blue_villa', slot: 'house', icon: '🏠', name: 'Ngôi nhà gỗ xanh pastel', cost: 28, desc: 'Ngôi nhà mái ngói xanh dương nhạt ấm cúng phía sau mèo trắng.' }
         ];
 
         const uiState = {
@@ -577,6 +644,7 @@
             gameLastDeltaPositive: true,
             gameAutoTimer: null,
             // Module E: White Cat Care
+            shopTab: 'food',
             catJustFedAnim: false,
             catSpeechOverride: ''
         };
@@ -710,6 +778,107 @@
                 scaleX = +(scaleX + 0.05).toFixed(2);
             }
 
+            // Equipped Items Layers
+            let houseLayerHtml = '';
+            if (petEconomy.equippedHouse === 'cozy_bed') {
+                houseLayerHtml = `
+                    <ellipse cx="100" cy="179" rx="68" ry="15" fill="#D6E7FD" stroke="#649EE8" stroke-width="2.8"/>
+                    <ellipse cx="100" cy="177" rx="54" ry="10" fill="#F5F9FF" stroke="#98C3FA" stroke-width="1.8"/>
+                `;
+            } else if (petEconomy.equippedHouse === 'blue_villa') {
+                houseLayerHtml = `
+                    <g opacity="0.96">
+                        <rect x="34" y="84" width="132" height="98" rx="12" fill="#EBF3FE" stroke="#649EE8" stroke-width="3"/>
+                        <path d="M22 90 L100 32 L178 90 Z" fill="#98C3FA" stroke="#4E84CC" stroke-width="3" stroke-linejoin="round"/>
+                        <path d="M74 182 L74 134 C74 118 126 118 126 134 L126 182 Z" fill="#FFFFFF" stroke="#649EE8" stroke-width="2.5"/>
+                        <circle cx="100" cy="64" r="10" fill="#FFFFFF" stroke="#4E84CC" stroke-width="2.5"/>
+                    </g>
+                `;
+            }
+
+            let scratchLayerHtml = '';
+            if (petEconomy.equippedScratch === 'scratch_post') {
+                scratchLayerHtml = `
+                    <g>
+                        <rect x="6" y="172" width="38" height="10" rx="5" fill="#B8D6FC" stroke="#4E84CC" stroke-width="2.4"/>
+                        <rect x="18" y="114" width="14" height="58" rx="4" fill="#FDE68A" stroke="#B45309" stroke-width="2.2"/>
+                        <line x1="18" y1="126" x2="32" y2="130" stroke="#B45309" stroke-width="1.8"/>
+                        <line x1="18" y1="138" x2="32" y2="142" stroke="#B45309" stroke-width="1.8"/>
+                        <line x1="18" y1="150" x2="32" y2="154" stroke="#B45309" stroke-width="1.8"/>
+                        <line x1="18" y1="162" x2="32" y2="166" stroke="#B45309" stroke-width="1.8"/>
+                        <circle cx="25" cy="110" r="6" fill="#98C3FA" stroke="#4E84CC" stroke-width="2"/>
+                    </g>
+                `;
+            } else if (petEconomy.equippedScratch === 'cat_tree') {
+                scratchLayerHtml = `
+                    <g>
+                        <rect x="2" y="172" width="46" height="10" rx="5" fill="#98C3FA" stroke="#4E84CC" stroke-width="2.4"/>
+                        <rect x="13" y="134" width="11" height="38" fill="#FDE68A" stroke="#B45309" stroke-width="2"/>
+                        <rect x="28" y="96" width="11" height="76" fill="#FDE68A" stroke="#B45309" stroke-width="2"/>
+                        <rect x="4" y="128" width="30" height="8" rx="4" fill="#D6E7FD" stroke="#4E84CC" stroke-width="2.2"/>
+                        <rect x="16" y="90" width="34" height="9" rx="4.5" fill="#98C3FA" stroke="#4E84CC" stroke-width="2.2"/>
+                        <circle cx="44" cy="105" r="4.5" fill="#F472B6"/>
+                    </g>
+                `;
+            }
+
+            let outfitTorsoHtml = '';
+            if (petEconomy.equippedOutfit === 'hoodie_blue') {
+                outfitTorsoHtml = `
+                    <path d="M62 126 Q100 134 138 126 C144 140 144 158 134 168 Q100 174 66 168 C56 158 56 140 62 126 Z" fill="#98C3FA" stroke="#4E84CC" stroke-width="2.8"/>
+                    <path d="M84 148 L116 148 L112 165 L88 165 Z" fill="#D6E7FD" stroke="#4E84CC" stroke-width="2"/>
+                    <line x1="94" y1="130" x2="94" y2="142" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+                    <line x1="106" y1="130" x2="106" y2="142" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+                `;
+            }
+
+            let outfitNeckHeadHtml = '';
+            if (petEconomy.equippedOutfit === 'bow_tie') {
+                outfitNeckHeadHtml = `
+                    <g>
+                        <path d="M100 126 L84 118 L84 134 Z" fill="#84B6F8" stroke="#3965A3" stroke-width="2.2" stroke-linejoin="round"/>
+                        <path d="M100 126 L116 118 L116 134 Z" fill="#84B6F8" stroke="#3965A3" stroke-width="2.2" stroke-linejoin="round"/>
+                        <circle cx="100" cy="126" r="4.5" fill="#F472B6" stroke="#3965A3" stroke-width="2"/>
+                    </g>
+                `;
+            } else if (petEconomy.equippedOutfit === 'crown_royal') {
+                outfitNeckHeadHtml = `
+                    <g>
+                        <path d="M82 48 L86 31 L94 41 L100 27 L106 41 L114 31 L118 48 Z" fill="#FDE047" stroke="#B45309" stroke-width="2.4" stroke-linejoin="round"/>
+                        <circle cx="100" cy="42" r="2.3" fill="#60A5FA"/>
+                    </g>
+                `;
+            }
+
+            let toyLayerHtml = '';
+            if (petEconomy.equippedToy === 'yarn_ball') {
+                toyLayerHtml = `
+                    <g>
+                        <path d="M144 181 Q160 185 178 179" stroke="#649EE8" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+                        <circle cx="164" cy="171" r="12" fill="#98C3FA" stroke="#4E84CC" stroke-width="2.4"/>
+                        <path d="M155 166 Q164 162 173 168" stroke="#4E84CC" stroke-width="1.8" fill="none"/>
+                        <path d="M154 173 Q164 178 174 172" stroke="#4E84CC" stroke-width="1.8" fill="none"/>
+                    </g>
+                `;
+            } else if (petEconomy.equippedToy === 'fish_plush') {
+                toyLayerHtml = `
+                    <g transform="translate(150, 158) rotate(-14)">
+                        <ellipse cx="16" cy="12" rx="14" ry="8.5" fill="#BAE6FD" stroke="#4E84CC" stroke-width="2.3"/>
+                        <path d="M29 12 L38 5 L38 19 Z" fill="#98C3FA" stroke="#4E84CC" stroke-width="2.2" stroke-linejoin="round"/>
+                        <circle cx="9" cy="10" r="1.8" fill="#1E293B"/>
+                    </g>
+                `;
+            } else if (petEconomy.equippedToy === 'wand_feather') {
+                toyLayerHtml = `
+                    <g>
+                        <line x1="186" y1="182" x2="156" y2="128" stroke="#92400E" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M156 128 Q144 138 148 150" stroke="#649EE8" stroke-width="1.8" fill="none"/>
+                        <ellipse cx="146" cy="154" rx="5" ry="10" transform="rotate(20 146 154)" fill="#F9A8D4" stroke="#DB2777" stroke-width="1.8"/>
+                        <ellipse cx="152" cy="152" rx="4.5" ry="9" transform="rotate(-15 152 152)" fill="#98C3FA" stroke="#4E84CC" stroke-width="1.8"/>
+                    </g>
+                `;
+            }
+
             // Facial expressions per state
             let earsMarkup = '';
             let eyesMarkup = '';
@@ -795,8 +964,14 @@
 
             return `
                 <svg viewBox="0 0 200 200" class="${sizeClass} ${animClass} select-none mx-auto overflow-visible" xmlns="http://www.w3.org/2000/svg">
+                    <!-- House / Bed Layer -->
+                    ${houseLayerHtml}
+
                     <!-- Soft Ground Shadow -->
                     <ellipse cx="100" cy="184" rx="${Math.round(52 * scaleX)}" ry="9" fill="#CBD5E1" opacity="0.6"/>
+
+                    <!-- Scratching Post Layer -->
+                    ${scratchLayerHtml}
 
                     <!-- Scalable White Cat Body Group (Chubbier when full, slimmer when hungry) -->
                     <g transform="translate(100, 145) scale(${scaleX}, ${scaleY}) translate(-100, -145)">
@@ -805,6 +980,9 @@
 
                         <!-- Plump Pure White Torso -->
                         <ellipse cx="100" cy="146" rx="44" ry="36" fill="#FFFFFF" stroke="#334155" stroke-width="3.5"/>
+
+                        <!-- Torso Outfit Layer -->
+                        ${outfitTorsoHtml}
 
                         <!-- Cute Front Paws -->
                         <ellipse cx="80" cy="175" rx="12" ry="8" fill="#FFFFFF" stroke="#334155" stroke-width="3.2"/>
@@ -816,6 +994,9 @@
 
                     <!-- Pure White Head (Chubbier cheeks when full) -->
                     <ellipse cx="100" cy="88" rx="${profile.state === 'full' ? 52 : (profile.state === 'hungry' ? 44 : 47)}" ry="39" fill="#FFFFFF" stroke="#334155" stroke-width="3.5"/>
+
+                    <!-- Neck / Head Outfit Layer -->
+                    ${outfitNeckHeadHtml}
 
                     <!-- Whiskers -->
                     <line x1="42" y1="92" x2="58" y2="94" stroke="#64748B" stroke-width="2.2" stroke-linecap="round"/>
@@ -830,6 +1011,9 @@
                     ${eyesMarkup}
                     ${mouthMarkup}
                     ${extrasMarkup}
+
+                    <!-- Toy Layer -->
+                    ${toyLayerHtml}
                 </svg>
             `;
         }
@@ -868,6 +1052,7 @@
             localStorage.setItem(STORAGE_KEYS.accent, accent);
             updateAccentButtons();
             showToast(`🎙️ Đã chọn giọng ${accent === 'en-US' ? 'Anh - Mỹ (US)' : 'Anh - Anh (UK)'}`, 'info');
+            speakText(accent === 'en-US' ? 'Hello! Ready to learn.' : 'Hello! Ready to learn.', 1.0);
         }
 
         function cleanSpeechWord(raw) {
@@ -879,21 +1064,140 @@
                 .trim();
         }
 
-        function speakText(text, rate = 1.0) {
-            const clean = (text || '').trim();
-            if (!clean || !('speechSynthesis' in window)) return;
-            try {
-                window.speechSynthesis.cancel();
-                const utter = new SpeechSynthesisUtterance(clean);
-                utter.lang = voiceAccent;
-                utter.rate = rate;
-                const voices = window.speechSynthesis.getVoices();
-                const matched = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(voiceAccent.toLowerCase()));
-                if (matched) utter.voice = matched;
-                window.speechSynthesis.speak(utter);
-            } catch (e) {
-                // Speech fallback
+        // Cache available browser voices and filter out buzzy/robotic macOS Eloquence & novelty voices
+        let cachedBrowserVoices = [];
+        const ROBOTIC_VOICE_BLACKLIST = [
+            'albert', 'bad news', 'bahh', 'bells', 'boing', 'bubbles', 'cellos',
+            'deranged', 'eddy', 'flo', 'fred', 'good news', 'grandma', 'grandpa',
+            'hysterical', 'junior', 'kathy', 'pipe organ', 'princess', 'ralph',
+            'reed', 'rocko', 'sandy', 'shelley', 'trinoids', 'whisper', 'wobble', 'zarvox'
+        ];
+
+        function refreshBrowserVoices() {
+            if (!('speechSynthesis' in window)) return;
+            const list = window.speechSynthesis.getVoices();
+            if (list && list.length > 0) {
+                cachedBrowserVoices = list;
             }
+        }
+        if ('speechSynthesis' in window) {
+            refreshBrowserVoices();
+            window.speechSynthesis.onvoiceschanged = refreshBrowserVoices;
+        }
+
+        function pickBestNaturalVoice(targetLang) {
+            const voices = cachedBrowserVoices.length ? cachedBrowserVoices : window.speechSynthesis.getVoices();
+            if (!voices || !voices.length) return null;
+
+            const langPrefix = targetLang.toLowerCase();
+            const isRobotic = (v) => ROBOTIC_VOICE_BLACKLIST.some(bad => (v.name || '').toLowerCase().includes(bad));
+
+            // Filter by target accent (en-US or en-GB) first, falling back to any English voice
+            let candidates = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(langPrefix) && !isRobotic(v));
+            if (!candidates.length) {
+                candidates = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en') && !isRobotic(v));
+            }
+            if (!candidates.length) return null;
+
+            const preferredNames = targetLang === 'en-GB'
+                ? ['google uk english female', 'google uk english male', 'daniel', 'serena', 'kate', 'arthur', 'libby', 'sonia', 'natural', 'premium', 'enhanced']
+                : ['google us english', 'samantha', 'ava', 'allison', 'alex', 'aria', 'jenny', 'guy', 'natural', 'premium', 'enhanced'];
+
+            for (const pref of preferredNames) {
+                const found = candidates.find(v => v.name.toLowerCase().includes(pref));
+                if (found) return found;
+            }
+            return candidates[0];
+        }
+
+        // Studio pronunciation MP3 cache for single words + anti-crackle Web Speech fallback
+        const dictAudioUrlCache = new Map();
+        let activeAudioPlayer = null;
+        let speechSpeakTimer = null;
+
+        async function getStudioDictionaryAudio(word, accent) {
+            const normalized = word.toLowerCase().trim();
+            if (!normalized || normalized.includes(' ') || !/^[a-z'-]+$/.test(normalized)) return null;
+
+            const cacheKey = `${accent}:${normalized}`;
+            if (dictAudioUrlCache.has(cacheKey)) {
+                return dictAudioUrlCache.get(cacheKey);
+            }
+
+            try {
+                const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(normalized)}`);
+                if (!res.ok) {
+                    dictAudioUrlCache.set(cacheKey, null);
+                    return null;
+                }
+                const data = await res.json();
+                const phonetics = data?.[0]?.phonetics || [];
+                const audioUrls = phonetics.map(p => p.audio).filter(Boolean);
+                const regionTag = accent === 'en-GB' ? '-uk' : '-us';
+                const chosenUrl = audioUrls.find(u => u.toLowerCase().includes(regionTag)) || audioUrls[0] || null;
+                dictAudioUrlCache.set(cacheKey, chosenUrl);
+                return chosenUrl;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function speakWithCleanSynthesis(cleanText, rate) {
+            if (!('speechSynthesis' in window)) return;
+            try {
+                if (speechSpeakTimer) clearTimeout(speechSpeakTimer);
+                window.speechSynthesis.cancel();
+
+                // Small delay prevents Chrome audio buffer clipping/crackling after cancel()
+                speechSpeakTimer = setTimeout(() => {
+                    const utter = new SpeechSynthesisUtterance(cleanText);
+                    utter.lang = voiceAccent;
+                    utter.rate = rate;
+                    utter.pitch = 1.0;
+                    utter.volume = 1.0;
+
+                    const bestVoice = pickBestNaturalVoice(voiceAccent);
+                    if (bestVoice) {
+                        utter.voice = bestVoice;
+                    }
+
+                    // Keep global reference so Chrome GC does not cut off mid-speech
+                    window._linbunActiveUtterance = utter;
+                    window.speechSynthesis.speak(utter);
+                }, 65);
+            } catch (e) {
+                // Speech synthesis fallback
+            }
+        }
+
+        async function speakText(text, rate = 1.0) {
+            const clean = (text || '').trim();
+            if (!clean) return;
+
+            if (activeAudioPlayer) {
+                try {
+                    activeAudioPlayer.pause();
+                    activeAudioPlayer.currentTime = 0;
+                } catch (e) {}
+                activeAudioPlayer = null;
+            }
+
+            // Try crystal-clear studio pronunciation MP3 for single words first
+            const studioUrl = await getStudioDictionaryAudio(clean, voiceAccent);
+            if (studioUrl) {
+                try {
+                    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                    const audio = new Audio(studioUrl);
+                    audio.playbackRate = rate;
+                    activeAudioPlayer = audio;
+                    await audio.play();
+                    return;
+                } catch (e) {
+                    // Fall back smoothly to clean speech synthesis if playback is blocked
+                }
+            }
+
+            speakWithCleanSynthesis(clean, rate);
         }
 
         let audioCtx = null;
@@ -933,6 +1237,9 @@
                     tone(440, 0, 0.1, 'sine', 0.15);
                     tone(554.37, 0.09, 0.1, 'sine', 0.15);
                     tone(659.25, 0.18, 0.22, 'sine', 0.17);
+                } else if (type === 'flip') {
+                    tone(392.0, 0, 0.07, 'sine', 0.08);
+                    tone(523.25, 0.04, 0.1, 'sine', 0.09);
                 }
             } catch (e) {
                 // Optional audio
@@ -1179,6 +1486,35 @@
             showToast('🔀 Đã xáo trộn bộ thẻ từ mới!', 'info');
         }
 
+        function triggerCardFlipVisual(stageId, cardId, isFlipped) {
+            const stageEl = document.getElementById(stageId);
+            const cardEl = document.getElementById(cardId);
+            if (!cardEl) return false;
+            cardEl.classList.toggle('is-flipped', isFlipped);
+            if (stageEl) {
+                stageEl.classList.remove('is-flipping');
+                void stageEl.offsetWidth;
+                stageEl.classList.add('is-flipping');
+                setTimeout(() => stageEl.classList.remove('is-flipping'), 680);
+            }
+            playGameSound('flip');
+            return true;
+        }
+
+        function flipNewFlashcard() {
+            uiState.newCardFlipped = !uiState.newCardFlipped;
+            if (!triggerCardFlipVisual('new-flashcard-stage', 'new-flashcard-3d', uiState.newCardFlipped)) {
+                renderNewVocabModule();
+            }
+        }
+
+        function flipLearnedFlashcard() {
+            uiState.learnedCardFlipped = !uiState.learnedCardFlipped;
+            if (!triggerCardFlipVisual('learned-flashcard-stage', 'learned-flashcard-3d', uiState.learnedCardFlipped)) {
+                renderLearnedVocabModule();
+            }
+        }
+
         function renderNewVocabModule() {
             const container = document.getElementById('app-content');
             const allNew = getNewVocabulary();
@@ -1237,10 +1573,10 @@
 
                 bodyHtml = `
                     <div class="max-w-2xl mx-auto space-y-4">
-                        <div class="perspective-1200 cursor-pointer" onclick="uiState.newCardFlipped=!uiState.newCardFlipped; renderNewVocabModule();">
-                            <div class="preserve-3d relative min-h-[340px] sm:min-h-[360px] ${uiState.newCardFlipped ? 'is-flipped' : ''}">
+                        <div id="new-flashcard-stage" class="perspective-1200 flashcard-stage cursor-pointer" onclick="flipNewFlashcard()">
+                            <div id="new-flashcard-3d" class="preserve-3d relative min-h-[340px] sm:min-h-[360px] ${uiState.newCardFlipped ? 'is-flipped' : ''}">
                                 <!-- Front Face -->
-                                <div class="backface-hidden absolute inset-0 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-md flex flex-col justify-between">
+                                <div class="backface-hidden card-shine absolute inset-0 rounded-3xl bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 p-6 sm:p-8 flex flex-col justify-between">
                                     <div class="flex items-center justify-between gap-2">
                                         <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-50 text-blue-700 dark:bg-slate-900 dark:text-blue-300 border border-blue-200 dark:border-slate-700">
                                             ${escapeHtml(item.category)}
@@ -1277,7 +1613,7 @@
                                 </div>
 
                                 <!-- Back Face -->
-                                <div class="backface-hidden rotate-y-180 absolute inset-0 rounded-3xl bg-white dark:bg-slate-800 border-2 border-blue-300 dark:border-blue-600 p-6 sm:p-8 shadow-md flex flex-col justify-between">
+                                <div class="backface-hidden card-shine rotate-y-180 absolute inset-0 rounded-3xl bg-white dark:bg-slate-800 border-2 border-blue-200 dark:border-blue-500 p-6 sm:p-8 flex flex-col justify-between">
                                     <div class="flex items-center justify-between gap-2">
                                         <span class="font-display font-extrabold text-sm text-slate-700 dark:text-slate-200">
                                             ${escapeHtml(item.word)} <span class="font-mono text-xs text-slate-400">${escapeHtml(item.ipa || '')}</span>
@@ -1484,9 +1820,9 @@
 
                 bodyHtml = `
                     <div class="max-w-2xl mx-auto space-y-4">
-                        <div class="perspective-1200 cursor-pointer" onclick="uiState.learnedCardFlipped=!uiState.learnedCardFlipped; renderLearnedVocabModule();">
-                            <div class="preserve-3d relative min-h-[320px] ${uiState.learnedCardFlipped ? 'is-flipped' : ''}">
-                                <div class="backface-hidden absolute inset-0 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-md flex flex-col justify-between">
+                        <div id="learned-flashcard-stage" class="perspective-1200 flashcard-stage cursor-pointer" onclick="flipLearnedFlashcard()">
+                            <div id="learned-flashcard-3d" class="preserve-3d relative min-h-[320px] ${uiState.learnedCardFlipped ? 'is-flipped' : ''}">
+                                <div class="backface-hidden card-shine absolute inset-0 rounded-3xl bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 p-6 sm:p-8 flex flex-col justify-between">
                                     <div class="flex items-center justify-between">
                                         <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-50 text-blue-700 dark:bg-slate-900 dark:text-blue-300 border border-blue-200 dark:border-slate-700">
                                             ${escapeHtml(item.category)}
@@ -1505,7 +1841,7 @@
                                     <div class="text-center text-xs text-slate-400">Nhấn vào thẻ để kiểm tra lại nghĩa tiếng Việt</div>
                                 </div>
 
-                                <div class="backface-hidden rotate-y-180 absolute inset-0 rounded-3xl bg-white dark:bg-slate-800 border-2 border-blue-400 p-6 sm:p-8 shadow-md flex flex-col justify-between">
+                                <div class="backface-hidden card-shine rotate-y-180 absolute inset-0 rounded-3xl bg-white dark:bg-slate-800 border-2 border-blue-200 dark:border-blue-500 p-6 sm:p-8 flex flex-col justify-between">
                                     <div class="font-bold text-sm text-slate-700 dark:text-slate-200">${escapeHtml(item.word)}</div>
                                     <div class="my-auto space-y-2">
                                         <div class="font-display font-extrabold text-2xl text-blue-600 dark:text-blue-400">${escapeHtml(item.meaningVi)}</div>
@@ -3208,8 +3544,65 @@
         }
 
         /* ============================================================================
-           10. MODULE E: NUÔI MÈO TRẮNG (WHITE CAT CARE & FOOD SHOP)
+           10. MODULE E: NUÔI MÈO TRẮNG (WHITE CAT CARE, FOOD & ITEMS SHOP)
            ============================================================================ */
+        function getEquippedSlotKey(slot) {
+            if (slot === 'outfit') return 'equippedOutfit';
+            if (slot === 'toy') return 'equippedToy';
+            if (slot === 'scratch') return 'equippedScratch';
+            return 'equippedHouse';
+        }
+
+        function buyOrToggleCatItem(itemId) {
+            const item = CAT_SHOP_ITEMS.find(i => i.id === itemId);
+            if (!item) return;
+
+            const slotKey = getEquippedSlotKey(item.slot);
+            const isOwned = petEconomy.ownedItems.includes(item.id);
+
+            if (!isOwned) {
+                if (petEconomy.money < item.cost) {
+                    playGameSound('wrong');
+                    showToast(`💸 Bạn cần ${item.cost}k để mua ${item.name} (hiện có ${petEconomy.money}k). Hãy chơi Game để kiếm thêm tiền nhé!`, 'error');
+                    return;
+                }
+                petEconomy.money -= item.cost;
+                petEconomy.ownedItems.push(item.id);
+                petEconomy[slotKey] = item.id;
+                petEconomy.catFullness = Math.min(100, petEconomy.catFullness + 5);
+
+                uiState.catJustFedAnim = true;
+                uiState.catSpeechOverride = `Meow~ Thích quá! Cảm ơn bạn đã mua ${item.name} cho mình 🥰`;
+
+                playGameSound('streak_bonus');
+                triggerConfetti(42);
+                persistData();
+                showToast(`${item.icon} Đã mua & trang bị ${item.name} (-${item.cost}k)!`, 'success');
+                renderCatCareModule();
+
+                setTimeout(() => {
+                    uiState.catJustFedAnim = false;
+                    uiState.catSpeechOverride = '';
+                    if (uiState.activeModule === 'cat_care') renderCatCareModule();
+                }, 2200);
+                return;
+            }
+
+            // Already owned -> toggle equip / unequip
+            if (petEconomy[slotKey] === item.id) {
+                petEconomy[slotKey] = 'none';
+                uiState.catSpeechOverride = `Đã cất gọn ${item.name} vào tủ đồ rồi nhé! 🐱`;
+                showToast(`📦 Đã cất ${item.name}`, 'info');
+            } else {
+                petEconomy[slotKey] = item.id;
+                uiState.catSpeechOverride = `Mình đang dùng ${item.name} mới nè, xinh không? ✨`;
+                playGameSound('coin');
+                showToast(`✨ Đã trang bị ${item.name} cho Mèo Trắng!`, 'success');
+            }
+            persistData();
+            renderCatCareModule();
+        }
+
         function feedWhiteCat(foodId, fromGameArena = false) {
             const food = CAT_FOOD_ITEMS.find(f => f.id === foodId);
             if (!food) return;
@@ -3266,40 +3659,125 @@
             const profile = getCatMoodProfile();
             const speechBubble = uiState.catSpeechOverride || profile.defaultSpeech;
 
-            const foodCardsHtml = CAT_FOOD_ITEMS.map(food => {
-                const canAfford = petEconomy.money >= food.cost;
-                return `
-                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex flex-col justify-between gap-3">
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-2xl shadow-2xs">
-                                    ${food.icon}
+            const shopTabs = [
+                { key: 'food', label: '🍽️ Đồ ăn' },
+                { key: 'outfit', label: '👗 Quần áo' },
+                { key: 'toy', label: '🧶 Đồ chơi' },
+                { key: 'scratch', label: '🪵 Bàn cào' },
+                { key: 'house', label: '🏠 Nhà ở' }
+            ];
+
+            const shopTabsHtml = shopTabs.map(t => `
+                <button onclick="uiState.shopTab='${t.key}'; renderCatCareModule();" class="px-3.5 py-2 rounded-xl text-xs font-extrabold border transition-all ${
+                    uiState.shopTab === t.key
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400'
+                }">
+                    ${t.label}
+                </button>
+            `).join('');
+
+            let shopGridHtml = '';
+            if (uiState.shopTab === 'food') {
+                shopGridHtml = CAT_FOOD_ITEMS.map(food => {
+                    const canAfford = petEconomy.money >= food.cost;
+                    return `
+                        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex flex-col justify-between gap-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-2xl shadow-2xs">
+                                        ${food.icon}
+                                    </div>
+                                    <div>
+                                        <div class="font-display font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">${food.name}</div>
+                                        <div class="text-xs font-extrabold text-blue-600 dark:text-blue-400">+${food.fullnessGain}% độ no</div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <div class="font-display font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">${food.name}</div>
-                                    <div class="text-xs font-extrabold text-blue-600 dark:text-blue-400">+${food.fullnessGain}% độ no</div>
-                                </div>
+                                <span class="px-2.5 py-1 rounded-full bg-blue-600 text-white text-xs font-extrabold">
+                                    💰 ${food.cost}k
+                                </span>
                             </div>
-                            <span class="px-2.5 py-1 rounded-full bg-blue-600 text-white text-xs font-extrabold">
-                                💰 ${food.cost}k
-                            </span>
+
+                            <p class="text-xs text-slate-500 dark:text-slate-400">${food.desc}</p>
+
+                            <button
+                                onclick="feedWhiteCat('${food.id}', false)"
+                                class="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all ${
+                                    canAfford
+                                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+                                        : 'bg-slate-200 dark:bg-slate-800 text-slate-500 hover:bg-slate-300'
+                                }"
+                            >
+                                ${canAfford ? `🍽️ Mua & Cho ăn (${food.cost}k)` : `🔒 Thiếu tiền (Cần ${food.cost}k)`}
+                            </button>
                         </div>
+                    `;
+                }).join('');
+            } else {
+                const filteredItems = CAT_SHOP_ITEMS.filter(i => i.slot === uiState.shopTab);
+                shopGridHtml = filteredItems.map(item => {
+                    const isOwned = petEconomy.ownedItems.includes(item.id);
+                    const slotKey = getEquippedSlotKey(item.slot);
+                    const isEquipped = petEconomy[slotKey] === item.id;
+                    const canAfford = petEconomy.money >= item.cost;
 
-                        <p class="text-xs text-slate-500 dark:text-slate-400">${food.desc}</p>
+                    let btnClass = 'bg-slate-200 dark:bg-slate-800 text-slate-500 hover:bg-slate-300';
+                    let btnLabel = `🔒 Thiếu tiền (Cần ${item.cost}k)`;
 
-                        <button
-                            onclick="feedWhiteCat('${food.id}', false)"
-                            class="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all ${
-                                canAfford
-                                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
-                                    : 'bg-slate-200 dark:bg-slate-800 text-slate-500 hover:bg-slate-300'
-                            }"
-                        >
-                            ${canAfford ? `🍽️ Mua & Cho ăn (${food.cost}k)` : `🔒 Thiếu tiền (Cần ${food.cost}k)`}
-                        </button>
-                    </div>
-                `;
-            }).join('');
+                    if (isOwned && isEquipped) {
+                        btnClass = 'bg-blue-100 dark:bg-slate-800 border border-blue-400 text-blue-700 dark:text-blue-300';
+                        btnLabel = '✅ Đang trang bị (Bấm để cất)';
+                    } else if (isOwned) {
+                        btnClass = 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs';
+                        btnLabel = '✨ Trang bị cho mèo';
+                    } else if (canAfford) {
+                        btnClass = 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs';
+                        btnLabel = `🛍️ Mua & Trang bị (${item.cost}k)`;
+                    }
+
+                    return `
+                        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border ${isEquipped ? 'border-blue-400 ring-2 ring-blue-200/60' : 'border-slate-200 dark:border-slate-700'} flex flex-col justify-between gap-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-2xl shadow-2xs">
+                                        ${item.icon}
+                                    </div>
+                                    <div>
+                                        <div class="font-display font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">${item.name}</div>
+                                        <div class="text-xs font-extrabold text-blue-600 dark:text-blue-400">
+                                            ${isOwned ? 'Đã sở hữu trong tủ đồ' : 'Vật phẩm trang trí vĩnh viễn'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full ${isOwned ? 'bg-blue-100 text-blue-700' : 'bg-blue-600 text-white'} text-xs font-extrabold">
+                                    ${isOwned ? 'Đã mua' : `💰 ${item.cost}k`}
+                                </span>
+                            </div>
+
+                            <p class="text-xs text-slate-500 dark:text-slate-400">${item.desc}</p>
+
+                            <button
+                                onclick="buyOrToggleCatItem('${item.id}')"
+                                class="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all ${btnClass}"
+                            >
+                                ${btnLabel}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const equippedSummaryBadges = [
+                { slot: 'outfit', label: '👗 Quần áo', val: CAT_SHOP_ITEMS.find(i => i.id === petEconomy.equippedOutfit)?.name || 'Chưa mặc' },
+                { slot: 'toy', label: '🧶 Đồ chơi', val: CAT_SHOP_ITEMS.find(i => i.id === petEconomy.equippedToy)?.name || 'Chưa có' },
+                { slot: 'scratch', label: '🪵 Bàn cào', val: CAT_SHOP_ITEMS.find(i => i.id === petEconomy.equippedScratch)?.name || 'Chưa có' },
+                { slot: 'house', label: '🏠 Nhà ở', val: CAT_SHOP_ITEMS.find(i => i.id === petEconomy.equippedHouse)?.name || 'Chưa có' }
+            ].map(b => `
+                <div onclick="uiState.shopTab='${b.slot}'; renderCatCareModule();" class="cursor-pointer px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-blue-400 text-left">
+                    <div class="text-[10px] font-bold text-slate-400">${b.label}</div>
+                    <div class="text-[11px] font-extrabold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(b.val)}</div>
+                </div>
+            `).join('');
 
             container.innerHTML = `
                 <div class="space-y-5">
@@ -3307,10 +3785,10 @@
                     <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
                         <div>
                             <h2 class="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white">
-                                🐱 Phòng Chăm Sóc Mèo Trắng
+                                🐱 Phòng Chăm Sóc & Mua Sắm Cho Mèo Trắng
                             </h2>
                             <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                                Chơi game trả lời đúng để kiếm tiền <strong>k</strong> mua đồ ăn — mèo đói sẽ buồn khóc, mèo no sẽ mập ú vui tươi!
+                                Dùng tiền <strong>k</strong> kiếm từ Game để mua <strong>Đồ ăn, Quần áo, Đồ chơi, Bàn cào & Nhà ở</strong> cho Mèo Trắng!
                             </p>
                         </div>
 
@@ -3324,7 +3802,7 @@
                         </div>
                     </div>
 
-                    <!-- Main Split: White Cat Stage (5 cols) + Food Shop (7 cols) -->
+                    <!-- Main Split: White Cat Stage (5 cols) + Shop (7 cols) -->
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                         <!-- White Cat Stage -->
                         <div class="lg:col-span-5 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 text-center space-y-4 shadow-sm">
@@ -3333,7 +3811,7 @@
                                     ${profile.emoji} ${profile.label}
                                 </span>
                                 <span class="text-xs font-extrabold text-slate-500">
-                                    Đã ăn: ${petEconomy.mealsFed || 0} bữa
+                                    Tủ đồ: ${petEconomy.ownedItems.length}/${CAT_SHOP_ITEMS.length} món
                                 </span>
                             </div>
 
@@ -3342,9 +3820,14 @@
                                 "${escapeHtml(speechBubble)}"
                             </div>
 
-                            <!-- Animated Pure White Cat SVG -->
+                            <!-- Animated Pure White Cat SVG with Equipped Items -->
                             <div class="py-2">
                                 ${renderWhiteCatSvg('w-56 h-56')}
+                            </div>
+
+                            <!-- Equipped Items Quick Overview -->
+                            <div class="grid grid-cols-2 gap-2">
+                                ${equippedSummaryBadges}
                             </div>
 
                             <!-- Fullness Meter -->
@@ -3364,20 +3847,24 @@
                             </div>
                         </div>
 
-                        <!-- Food Shop -->
+                        <!-- Multi-Category Cat Shop -->
                         <div class="lg:col-span-7 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 space-y-4 shadow-sm">
-                            <div class="flex items-center justify-between">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
                                 <div>
-                                    <h3 class="font-display font-extrabold text-lg text-slate-900 dark:text-white">🏪 Cửa Hàng Đồ Ăn Cho Mèo</h3>
-                                    <p class="text-xs text-slate-500">Chọn món ngon để giúp mèo trắng hết đói và mập ú lên!</p>
+                                    <h3 class="font-display font-extrabold text-lg text-slate-900 dark:text-white">🏪 Siêu Thị Đồ Ăn & Phụ Kiện Mèo</h3>
+                                    <p class="text-xs text-slate-500">Vật phẩm đã mua được lưu vĩnh viễn và hiển thị trực tiếp lên Mèo Trắng!</p>
                                 </div>
                                 <div class="px-3.5 py-1.5 rounded-full bg-blue-600 text-white text-xs sm:text-sm font-extrabold">
                                     💰 Ví của bạn: ${petEconomy.money}k
                                 </div>
                             </div>
 
+                            <div class="flex flex-wrap gap-1.5">
+                                ${shopTabsHtml}
+                            </div>
+
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                ${foodCardsHtml}
+                                ${shopGridHtml}
                             </div>
                         </div>
                     </div>
@@ -3405,8 +3892,7 @@
                 if (!list.length) return;
                 if (e.code === 'Space') {
                     e.preventDefault();
-                    uiState.newCardFlipped = !uiState.newCardFlipped;
-                    renderNewVocabModule();
+                    flipNewFlashcard();
                 } else if (e.code === 'ArrowRight') {
                     uiState.newCardIndex = (uiState.newCardIndex + 1) % list.length;
                     uiState.newCardFlipped = false;
@@ -3417,6 +3903,23 @@
                     renderNewVocabModule();
                 } else if (e.key.toLowerCase() === 'a') {
                     speakText(cleanSpeechWord(list[uiState.newCardIndex].word), 1.0);
+                }
+            } else if (uiState.activeModule === 'learned_vocab' && uiState.learnedViewMode === 'card') {
+                const list = getFilteredLearnedWords();
+                if (!list.length) return;
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    flipLearnedFlashcard();
+                } else if (e.code === 'ArrowRight') {
+                    uiState.learnedCardIndex = (uiState.learnedCardIndex + 1) % list.length;
+                    uiState.learnedCardFlipped = false;
+                    renderLearnedVocabModule();
+                } else if (e.code === 'ArrowLeft') {
+                    uiState.learnedCardIndex = (uiState.learnedCardIndex - 1 + list.length) % list.length;
+                    uiState.learnedCardFlipped = false;
+                    renderLearnedVocabModule();
+                } else if (e.key.toLowerCase() === 'a') {
+                    speakText(cleanSpeechWord(list[uiState.learnedCardIndex].word), 1.0);
                 }
             } else if (uiState.activeModule === 'game_arena') {
                 const q = uiState.gameCurrentQuestion;
